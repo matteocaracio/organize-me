@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Plus, Check, Clock, ArrowUp, ArrowUpRight, 
@@ -6,6 +5,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -27,37 +30,39 @@ interface Task {
   id: string;
   title: string;
   notes?: string;
-  date?: Date;
   priority: Priority;
   status: TaskStatus;
+  due_date?: Date;
 }
 
 const Tasks = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  
   const [open, setOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "1",
       title: "Enviar relatório final",
       notes: "Incluir todas as métricas do último trimestre",
-      date: new Date(2025, 3, 21, 10, 0),
       priority: "high",
-      status: "pending"
+      status: "pending",
+      due_date: new Date(2025, 3, 21, 10, 0)
     },
     {
       id: "2",
       title: "Reunião com equipe",
       notes: "Discutir os novos projetos",
-      date: new Date(2025, 3, 21, 14, 30),
       priority: "medium",
-      status: "pending"
+      status: "pending",
+      due_date: new Date(2025, 3, 21, 14, 30)
     },
     {
       id: "3",
       title: "Revisar cartões de Biologia",
       notes: "Focar no capítulo 5",
-      date: new Date(2025, 3, 21, 19, 0),
       priority: "low",
-      status: "pending"
+      status: "pending",
+      due_date: new Date(2025, 3, 21, 19, 0)
     },
     {
       id: "4",
@@ -67,11 +72,12 @@ const Tasks = () => {
     }
   ]);
   
-  // Estado para nova tarefa
+  // Update the newTask state to include due_date
   const [newTask, setNewTask] = useState({
     title: "",
     notes: "",
-    priority: "medium" as Priority
+    priority: "medium" as Priority,
+    due_date: undefined as Date | undefined
   });
 
   // Função para adicionar uma nova tarefa
@@ -83,14 +89,16 @@ const Tasks = () => {
       title: newTask.title,
       notes: newTask.notes,
       priority: newTask.priority,
-      status: "pending"
+      status: "pending",
+      due_date: newTask.due_date
     };
     
     setTasks([task, ...tasks]);
     setNewTask({
       title: "",
       notes: "",
-      priority: "medium"
+      priority: "medium",
+      due_date: undefined
     });
     setOpen(false);
   };
@@ -171,6 +179,31 @@ const Tasks = () => {
                 </RadioGroup>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Data de Vencimento</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !newTask.due_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {newTask.due_date ? format(newTask.due_date, "PPP") : "Selecione uma data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newTask.due_date}
+                    onSelect={(date) => setNewTask({...newTask, due_date: date})}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
               <Button onClick={addTask}>Adicionar</Button>
@@ -219,11 +252,11 @@ const Tasks = () => {
                             {task.notes}
                           </p>
                         )}
-                        {task.date && (
+                        {task.due_date && (
                           <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
                             <span>
-                              {task.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              {task.due_date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
                         )}

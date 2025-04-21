@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { 
   Plus, Search, MoreVertical, Book, Layers, 
   BarChart, Repeat, ChevronLeft, ChevronRight, 
-  ThumbsUp, ThumbsDown, AlertCircle 
+  ThumbsUp, ThumbsDown, AlertCircle, Trash2, FileEdit 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,6 +136,49 @@ const Flashcards = () => {
     description: ""
   });
 
+  // Estado para novo flashcard
+  const [newFlashcard, setNewFlashcard] = useState({
+    question: "",
+    answer: ""
+  });
+
+  const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
+  const [addingCard, setAddingCard] = useState(false);
+
+  const deleteDeck = (id: string) => {
+    setDecks(decks.filter(deck => deck.id !== id));
+  };
+
+  const addFlashcard = (deckId: string) => {
+    if (!newFlashcard.question.trim() || !newFlashcard.answer.trim()) return;
+
+    setDecks(decks.map(deck => {
+      if (deck.id === deckId) {
+        return {
+          ...deck,
+          cards: [...deck.cards, {
+            id: Date.now().toString(),
+            question: newFlashcard.question,
+            answer: newFlashcard.answer,
+            level: 0,
+            nextReview: new Date()
+          }]
+        };
+      }
+      return deck;
+    }));
+
+    setNewFlashcard({ question: "", answer: "" });
+    setAddingCard(false);
+  };
+
+  // Função para calcular deck progress
+  const calculateDeckProgress = (deck: Deck) => {
+    if (deck.cards.length === 0) return 0;
+    const masteredCards = deck.cards.filter(card => card.level >= 4).length;
+    return Math.round((masteredCards / deck.cards.length) * 100);
+  };
+
   // Função para adicionar um novo deck
   const addDeck = () => {
     if (newDeck.name.trim() === "") return;
@@ -197,6 +239,11 @@ const Flashcards = () => {
   const totalCardsForToday = decks.reduce(
     (total, deck) => total + getCardsForToday(deck), 0
   );
+
+  const editDeck = (deckId: string) => {
+    // Implement your edit deck logic here
+    console.log(`Editing deck with ID: ${deckId}`);
+  };
 
   if (studyMode && selectedDeck) {
     return (
@@ -326,6 +373,46 @@ const Flashcards = () => {
         </div>
       </div>
 
+      <Dialog open={addingCard} onOpenChange={setAddingCard}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar novo cartão</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Pergunta</Label>
+              <Input
+                value={newFlashcard.question}
+                onChange={(e) => setNewFlashcard({
+                  ...newFlashcard,
+                  question: e.target.value
+                })}
+                placeholder="Digite a pergunta"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Resposta</Label>
+              <Textarea
+                value={newFlashcard.answer}
+                onChange={(e) => setNewFlashcard({
+                  ...newFlashcard,
+                  answer: e.target.value
+                })}
+                placeholder="Digite a resposta"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddingCard(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => editingDeck && addFlashcard(editingDeck.id)}>
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Tabs defaultValue="decks">
         <TabsList className="w-full">
           <TabsTrigger value="decks" className="flex-1">
@@ -356,12 +443,17 @@ const Flashcards = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Adicionar cartões</DropdownMenuItem>
-                          <DropdownMenuItem>Editar deck</DropdownMenuItem>
-                          <DropdownMenuItem>Estatísticas</DropdownMenuItem>
-                          <DropdownMenuItem>Exportar</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            Excluir
+                          <DropdownMenuItem onClick={() => {
+                            setEditingDeck(deck);
+                            setAddingCard(true);
+                          }}>
+                            <Plus className="h-4 w-4 mr-2" /> Adicionar cartão
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => editDeck(deck.id)}>
+                            <FileEdit className="h-4 w-4 mr-2" /> Editar deck
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteDeck(deck.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir deck
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

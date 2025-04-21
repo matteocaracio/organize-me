@@ -1,8 +1,7 @@
-
-import { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { 
   Plus, Search, MoreVertical, Lock, Eye, 
-  Bookmark, AlertCircle, PinIcon, FileEdit, Share2 
+  AlertCircle, PinIcon, FileEdit, Share2, Trash2 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Tipo para as notas
 interface Note {
@@ -31,6 +32,7 @@ interface Note {
 const Notes = () => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
   const [notes, setNotes] = useState<Note[]>([
     {
       id: "1",
@@ -64,6 +66,42 @@ const Notes = () => {
     content: "",
     isProtected: false
   });
+
+  // Function to delete a note
+  const deleteNote = async (id: string) => {
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete note"
+      });
+      return;
+    }
+
+    setNotes(notes.filter(note => note.id !== id));
+    toast({
+      title: "Success",
+      description: "Note deleted successfully"
+    });
+  };
+
+  // Function to handle editing a note
+  const editNote = (id: string) => {
+    const noteToEdit = notes.find(note => note.id === id);
+    if (noteToEdit) {
+      setNewNote({
+        title: noteToEdit.title,
+        content: noteToEdit.content || "",
+        isProtected: noteToEdit.isProtected || false
+      });
+      setOpen(true);
+    }
+  };
 
   // Função para adicionar uma nova nota
   const addNote = () => {
@@ -189,7 +227,7 @@ const Notes = () => {
                     <PinIcon className="h-5 w-5 text-primary" />
                   </div>
                 )}
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start">
                   <h3 className="font-semibold text-lg truncate">{note.title}</h3>
                   <div className="flex items-center">
                     {note.isProtected && <Lock className="h-4 w-4 mr-1 text-muted-foreground" />}
@@ -200,21 +238,15 @@ const Notes = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" /> Modo leitura
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => editNote(note.id)}>
                           <FileEdit className="h-4 w-4 mr-2" /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => togglePin(note.id)}>
                           <PinIcon className="h-4 w-4 mr-2" /> 
                           {note.isPinned ? "Desafixar" : "Fixar"}
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          <AlertCircle className="h-4 w-4 mr-2" /> Excluir
+                        <DropdownMenuItem onClick={() => deleteNote(note.id)} className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" /> Excluir
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
