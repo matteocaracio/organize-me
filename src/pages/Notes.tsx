@@ -1,33 +1,12 @@
-import React, { useState, useCallback } from "react";
-import { 
-  Plus, Search, MoreVertical, Lock, Eye, 
-  AlertCircle, PinIcon, FileEdit, Share2, Trash2 
-} from "lucide-react";
+import React, { useState } from "react";
+import { Plus, Search, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-// Tipo para as notas
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  date: Date;
-  isPinned: boolean;
-  isProtected: boolean;
-}
+import { supabase } from "@/integrations/supabase/client";
+import NoteCard from "@/components/notes/NoteCard";
+import NewNoteDialog from "@/components/notes/NewNoteDialog";
+import type { Note } from "@/components/notes/types";
 
 const Notes = () => {
   const [open, setOpen] = useState(false);
@@ -60,14 +39,12 @@ const Notes = () => {
     }
   ]);
   
-  // Estado para nova nota
   const [newNote, setNewNote] = useState({
     title: "",
     content: "",
     isProtected: false
   });
 
-  // Function to delete a note
   const deleteNote = async (id: string) => {
     const { error } = await supabase
       .from('notes')
@@ -90,7 +67,6 @@ const Notes = () => {
     });
   };
 
-  // Function to handle editing a note
   const editNote = (id: string) => {
     const noteToEdit = notes.find(note => note.id === id);
     if (noteToEdit) {
@@ -103,7 +79,6 @@ const Notes = () => {
     }
   };
 
-  // Função para adicionar uma nova nota
   const addNote = () => {
     if (newNote.title.trim() === "") return;
     
@@ -125,20 +100,6 @@ const Notes = () => {
     setOpen(false);
   };
 
-  // Filtra notas pela busca
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    note.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Organiza notas com fixadas primeiro
-  const sortedNotes = [...filteredNotes].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    return b.date.getTime() - a.date.getTime();
-  });
-
-  // Função para alternar fixação da nota
   const togglePin = (id: string) => {
     setNotes(
       notes.map((note) =>
@@ -146,6 +107,17 @@ const Notes = () => {
       )
     );
   };
+
+  const filteredNotes = notes.filter(note => 
+    note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    note.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const sortedNotes = [...filteredNotes].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return b.date.getTime() - a.date.getTime();
+  });
 
   return (
     <div className="space-y-6">
@@ -162,53 +134,9 @@ const Notes = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" /> Nova Nota
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar nova nota</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Título</Label>
-                  <Input 
-                    id="title" 
-                    placeholder="Digite o título da nota" 
-                    value={newNote.title}
-                    onChange={(e) => setNewNote({...newNote, title: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="content">Conteúdo</Label>
-                  <Textarea 
-                    id="content" 
-                    placeholder="Escreva sua nota aqui..."
-                    rows={6}
-                    value={newNote.content}
-                    onChange={(e) => setNewNote({...newNote, content: e.target.value})}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="protected" 
-                    checked={newNote.isProtected}
-                    onCheckedChange={(checked) => 
-                      setNewNote({...newNote, isProtected: checked})
-                    }
-                  />
-                  <Label htmlFor="protected">Proteger com senha</Label>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={addNote}>Salvar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Nova Nota
+          </Button>
         </div>
       </div>
 
@@ -220,51 +148,24 @@ const Notes = () => {
           </div>
         ) : (
           sortedNotes.map((note) => (
-            <Card key={note.id} className="card-hover">
-              <CardContent className="p-4 pt-6 relative">
-                {note.isPinned && (
-                  <div className="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3">
-                    <PinIcon className="h-5 w-5 text-primary" />
-                  </div>
-                )}
-                <div className="flex justify-between items-start">
-                  <h3 className="font-semibold text-lg truncate">{note.title}</h3>
-                  <div className="flex items-center">
-                    {note.isProtected && <Lock className="h-4 w-4 mr-1 text-muted-foreground" />}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => editNote(note.id)}>
-                          <FileEdit className="h-4 w-4 mr-2" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => togglePin(note.id)}>
-                          <PinIcon className="h-4 w-4 mr-2" /> 
-                          {note.isPinned ? "Desafixar" : "Fixar"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => deleteNote(note.id)} className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-                <div className="h-24 overflow-hidden">
-                  <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
-                    {note.content}
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="px-4 py-2 text-xs text-muted-foreground border-t">
-                Atualizado em {note.date.toLocaleDateString('pt-BR')}
-              </CardFooter>
-            </Card>
+            <NoteCard
+              key={note.id}
+              note={note}
+              onDelete={deleteNote}
+              onEdit={editNote}
+              onTogglePin={togglePin}
+            />
           ))
         )}
       </div>
+
+      <NewNoteDialog
+        open={open}
+        onOpenChange={setOpen}
+        newNote={newNote}
+        onNewNoteChange={setNewNote}
+        onSave={addNote}
+      />
     </div>
   );
 };
