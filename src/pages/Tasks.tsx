@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Task } from "@/components/tasks/types";
+import { Task, NewTaskFormData, Priority } from "@/components/tasks/types";
 import NewTaskDialog from "@/components/tasks/NewTaskDialog";
 import TaskCard from "@/components/tasks/TaskCard";
 import EmptyState from "@/components/tasks/EmptyState";
@@ -11,11 +11,11 @@ import EmptyState from "@/components/tasks/EmptyState";
 const Tasks = () => {
   const [open, setOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTask, setNewTask] = useState({
+  const [newTask, setNewTask] = useState<NewTaskFormData>({
     title: "",
     notes: "",
-    priority: "medium" as const,
-    due_date: undefined as Date | undefined,
+    priority: "medium" as Priority,
+    due_date: undefined,
   });
 
   const addTask = () => {
@@ -51,6 +51,10 @@ const Tasks = () => {
   const pendingTasks = tasks.filter((task) => task.status === "pending");
   const completedTasks = tasks.filter((task) => task.status === "completed");
 
+  const handleNewTaskChange = (task: NewTaskFormData) => {
+    setNewTask(task);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -64,7 +68,7 @@ const Tasks = () => {
         open={open}
         onOpenChange={setOpen}
         newTask={newTask}
-        onNewTaskChange={setNewTask}
+        onNewTaskChange={handleNewTaskChange}
         onAddTask={addTask}
       />
 
