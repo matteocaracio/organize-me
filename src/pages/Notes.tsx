@@ -6,16 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import NoteCard from "@/components/notes/NoteCard";
 import NewNoteDialog from "@/components/notes/NewNoteDialog";
+import PasswordDialog from "@/components/notes/PasswordDialog";
+import GlobalPasswordDialog from "@/components/notes/GlobalPasswordDialog";
+import ViewNoteDialog from "@/components/notes/ViewNoteDialog";
+import DeletedNoteList from "@/components/notes/DeletedNoteList";
 import type { Note } from "@/components/notes/types";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 const Notes = () => {
   const [open, setOpen] = useState(false);
@@ -548,10 +544,6 @@ const Notes = () => {
     return b.date.getTime() - a.date.getTime();
   });
 
-  const handleNewNoteChange = (note: typeof newNote) => {
-    setNewNote(note);
-  };
-
   return (
     <div className="space-y-6">
       <Tabs defaultValue="notes">
@@ -572,24 +564,27 @@ const Notes = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button size="sm" onClick={() => {
-              if (!userGlobalPassword && setPasswordMode === false) {
-                setSetPasswordMode(true);
-                setGlobalPasswordDialog(true);
-              } else {
-                setEditingNoteId(null);
-                setNewNote({
-                  title: "",
-                  content: "",
-                  isProtected: false,
-                  password: ""
-                });
-                setOpen(true);
-              }
-            }}>
+            <Button 
+              size="sm" 
+              onClick={() => {
+                if (!userGlobalPassword && !setPasswordMode) {
+                  setSetPasswordMode(true);
+                  setGlobalPasswordDialog(true);
+                } else {
+                  setEditingNoteId(null);
+                  setNewNote({
+                    title: "",
+                    content: "",
+                    isProtected: false,
+                    password: ""
+                  });
+                  setOpen(true);
+                }
+              }}
+            >
               <Plus className="h-4 w-4 mr-1" /> Nova Nota
             </Button>
-            {userGlobalPassword ? (
+            {userGlobalPassword && (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -600,7 +595,7 @@ const Notes = () => {
               >
                 <Lock className="h-4 w-4 mr-1" /> Alterar Senha
               </Button>
-            ) : null}
+            )}
           </div>
         </div>
 
@@ -633,191 +628,54 @@ const Notes = () => {
         </TabsContent>
 
         <TabsContent value="trash" className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Lixeira</h2>
-            {deletedNotes.length > 0 && (
-              <Button 
-                variant="destructive" 
-                onClick={clearTrash}
-              >
-                <Trash2 className="h-4 w-4 mr-1" /> Limpar Lixeira
-              </Button>
-            )}
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {deletedNotes.length === 0 ? (
-              <div className="text-center p-6 text-muted-foreground col-span-full">
-                <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>A lixeira está vazia.</p>
-              </div>
-            ) : (
-              deletedNotes.map((note) => (
-                <Card key={note.id} className="card-hover opacity-70">
-                  <CardContent className="p-4 pt-6">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-lg truncate">{note.title}</h3>
-                      <div className="flex items-center">
-                        {note.isProtected && (
-                          <Lock className="h-4 w-4 mr-1 text-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="h-24 overflow-hidden">
-                      <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
-                        {note.content}
-                      </p>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="px-4 py-2 text-xs text-muted-foreground border-t flex justify-between">
-                    <span>
-                      Excluída em {note.deletedAt?.toLocaleDateString('pt-BR')}
-                    </span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-xs"
-                        onClick={() => restoreFromTrash(note.id)}
-                      >
-                        Restaurar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-                        onClick={() => deleteNote(note.id)}
-                      >
-                        Excluir
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))
-            )}
-          </div>
+          <DeletedNoteList
+            notes={deletedNotes}
+            onRestore={restoreFromTrash}
+            onDelete={deleteNote}
+            onClearTrash={clearTrash}
+          />
         </TabsContent>
       </Tabs>
 
       <NewNoteDialog
         open={open}
         onOpenChange={setOpen}
-        newNote={{
-          title: newNote.title,
-          content: newNote.content,
-          isProtected: newNote.isProtected
-        }}
-        onNewNoteChange={(note) => handleNewNoteChange({
-          ...newNote,
-          title: note.title,
-          content: note.content,
-          isProtected: note.isProtected
-        })}
+        newNote={newNote}
+        onNewNoteChange={(note) => setNewNote(note)}
         onSave={addOrUpdateNote}
         password={newNote.password}
         onPasswordChange={(password) => setNewNote({...newNote, password})}
       />
 
-      {/* Dialog para visualizar nota */}
-      <Dialog open={viewNoteDialog} onOpenChange={setViewNoteDialog}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{viewingNote?.title}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 max-h-[60vh] overflow-y-auto">
-            <p className="whitespace-pre-line">{viewingNote?.content}</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewNoteDialog(false)}>
-              Fechar
-            </Button>
-            {viewingNote && (
-              <Button onClick={() => {
-                setViewNoteDialog(false);
-                editNote(viewingNote.id);
-              }}>
-                Editar
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PasswordDialog
+        open={passwordDialog}
+        onOpenChange={setPasswordDialog}
+        onValidate={validatePassword}
+        password={notePassword}
+        onPasswordChange={setNotePassword}
+      />
 
-      {/* Dialog para solicitar senha */}
-      <Dialog open={passwordDialog} onOpenChange={setPasswordDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Nota Protegida</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center justify-center mb-4">
-              <Lock className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <p className="text-center text-sm text-muted-foreground">
-              Esta nota está protegida por senha. Digite a senha para continuar.
-            </p>
-            <Input
-              type="password"
-              placeholder="Digite a senha"
-              value={notePassword}
-              onChange={(e) => setNotePassword(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setPasswordDialog(false);
-              setNotePassword("");
-            }}>
-              Cancelar
-            </Button>
-            <Button onClick={validatePassword}>Continuar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog para configurar senha global */}
-      <Dialog 
-        open={globalPasswordDialog} 
+      <GlobalPasswordDialog
+        open={globalPasswordDialog}
         onOpenChange={(open) => {
           setGlobalPasswordDialog(open);
           if (!open) setSetPasswordMode(false);
         }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {userGlobalPassword && setPasswordMode 
-                ? "Alterar Senha Global" 
-                : "Configurar Senha Global"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center justify-center mb-4">
-              <Lock className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <p className="text-center text-sm text-muted-foreground">
-              {userGlobalPassword && setPasswordMode 
-                ? "Esta senha será usada para proteger todas as suas notas."
-                : "Configure uma senha global para proteger suas notas. Você precisará dessa senha para acessar notas protegidas."}
-            </p>
-            <Input
-              type="password"
-              placeholder="Digite a senha global"
-              value={globalPassword}
-              onChange={(e) => setGlobalPassword(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setGlobalPasswordDialog(false);
-              setGlobalPassword("");
-              setSetPasswordMode(false);
-            }}>
-              Cancelar
-            </Button>
-            <Button onClick={saveGlobalPassword}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onSave={saveGlobalPassword}
+        password={globalPassword}
+        onPasswordChange={setGlobalPassword}
+        isUpdate={Boolean(userGlobalPassword && setPasswordMode)}
+      />
+
+      <ViewNoteDialog
+        open={viewNoteDialog}
+        onOpenChange={setViewNoteDialog}
+        note={viewingNote}
+        onEdit={() => {
+          setViewNoteDialog(false);
+          if (viewingNote) editNote(viewingNote.id);
+        }}
+      />
     </div>
   );
 };
