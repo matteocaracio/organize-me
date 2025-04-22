@@ -75,7 +75,9 @@ export type Database = {
         Row: {
           content: string | null
           created_at: string
+          deleted: string | null
           id: string
+          is_pinned: boolean | null
           is_protected: boolean | null
           password: string | null
           title: string
@@ -85,7 +87,9 @@ export type Database = {
         Insert: {
           content?: string | null
           created_at?: string
+          deleted?: string | null
           id?: string
+          is_pinned?: boolean | null
           is_protected?: boolean | null
           password?: string | null
           title: string
@@ -95,7 +99,9 @@ export type Database = {
         Update: {
           content?: string | null
           created_at?: string
+          deleted?: string | null
           id?: string
+          is_pinned?: boolean | null
           is_protected?: boolean | null
           password?: string | null
           title?: string
@@ -110,6 +116,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          note_password: string | null
           phone: string | null
           updated_at: string
         }
@@ -118,6 +125,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          note_password?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -126,6 +134,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          note_password?: string | null
           phone?: string | null
           updated_at?: string
         }

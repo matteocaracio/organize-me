@@ -6,4 +6,5 @@ export interface Note {
   date: Date;
   isPinned: boolean;
   isProtected: boolean;
+  deletedAt?: Date;
 }

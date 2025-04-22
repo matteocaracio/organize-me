@@ -16,6 +16,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 const Notes = () => {
   const [open, setOpen] = useState(false);
@@ -122,7 +123,7 @@ const Notes = () => {
         .from('notes')
         .select('*')
         .eq('user_id', userData.user.id)
-        .is('deleted', null) // Somente notas não excluídas
+        .is('deleted', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -134,7 +135,8 @@ const Notes = () => {
           content: note.content || "",
           date: new Date(note.updated_at),
           isPinned: note.is_pinned || false,
-          isProtected: note.is_protected || false
+          isProtected: note.is_protected || false,
+          deletedAt: note.deleted ? new Date(note.deleted) : undefined
         }));
         setNotes(formattedNotes);
       }
@@ -159,7 +161,7 @@ const Notes = () => {
         .from('notes')
         .select('*')
         .eq('user_id', userData.user.id)
-        .not('deleted', 'is', null) // Somente notas excluídas
+        .not('deleted', 'is', null)
         .order('deleted', { ascending: false });
 
       if (error) throw error;
