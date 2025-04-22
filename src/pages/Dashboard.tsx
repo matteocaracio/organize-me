@@ -1,14 +1,93 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckSquare, FileText, Layers, Timer } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Task, Priority } from "@/components/tasks/types";
+import { Note } from "@/components/notes/types";
 
 const Dashboard = () => {
+  const [highPriorityTasks, setHighPriorityTasks] = useState(0);
+  const [recentNotes, setRecentNotes] = useState(0);
+  const [flashcardsToReview, setFlashcardsToReview] = useState(0);
+  const [userName, setUserName] = useState("Usuário");
+  const [focusTasks, setFocusTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) return;
+
+        // Buscar tarefas de alta prioridade
+        const { data: tasksData } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', userData.user.id)
+          .eq('is_completed', false)
+          .eq('priority', 'high');
+        
+        setHighPriorityTasks(tasksData?.length || 0);
+
+        // Buscar tarefas para o foco do dia (3 tarefas prioritárias)
+        const { data: focusTasksData } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', userData.user.id)
+          .eq('is_completed', false)
+          .order('priority', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        if (focusTasksData) {
+          const formattedTasks: Task[] = focusTasksData.map(task => ({
+            id: task.id,
+            title: task.title,
+            notes: task.notes || "",
+            priority: (task.priority || "medium") as Priority,
+            status: task.is_completed ? "completed" : "pending",
+            due_date: task.due_date ? new Date(task.due_date) : undefined
+          }));
+          setFocusTasks(formattedTasks);
+        }
+
+        // Buscar notas recentes
+        const { data: notesData } = await supabase
+          .from('notes')
+          .select('*')
+          .eq('user_id', userData.user.id)
+          .order('updated_at', { ascending: false })
+          .limit(5);
+        
+        setRecentNotes(notesData?.length || 0);
+
+        // Número de flashcards para revisão (simulação, já que não temos campo de next_review ainda)
+        setFlashcardsToReview(12); // Placeholder
+
+        // Buscar o nome do usuário (se existir)
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', userData.user.id)
+          .single();
+        
+        if (profileData && profileData.first_name) {
+          setUserName(profileData.first_name);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados do dashboard:", error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Olá, Usuário</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Olá, {userName}</h1>
           <p className="text-muted-foreground">
             <Clock className="inline-block h-4 w-4 mr-1" />
             <span>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -25,7 +104,7 @@ const Dashboard = () => {
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3</div>
+              <div className="text-2xl font-bold">{highPriorityTasks}</div>
               <p className="text-xs text-muted-foreground">
                 Tarefas de alta prioridade hoje
               </p>
@@ -41,7 +120,7 @@ const Dashboard = () => {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">{recentNotes}</div>
               <p className="text-xs text-muted-foreground">
                 Notas recentes ou fixadas
               </p>
@@ -57,7 +136,7 @@ const Dashboard = () => {
               <Layers className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{flashcardsToReview}</div>
               <p className="text-xs text-muted-foreground">
                 Cartões para revisar hoje
               </p>
@@ -73,33 +152,33 @@ const Dashboard = () => {
           <CardDescription>Tarefas e atividades prioritárias para hoje</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="border rounded-lg p-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-priority-high"></div>
-                <span className="font-medium">Enviar relatório final</span>
-              </div>
-              <span className="text-xs text-muted-foreground">10:00</span>
+          {focusTasks.length === 0 ? (
+            <div className="text-center text-muted-foreground py-4">
+              Não há tarefas prioritárias para hoje
             </div>
-          </div>
-          <div className="border rounded-lg p-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-priority-medium"></div>
-                <span className="font-medium">Reunião com equipe</span>
+          ) : (
+            focusTasks.map((task) => (
+              <div key={task.id} className="border rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      task.priority === 'high' 
+                        ? 'bg-priority-high' 
+                        : task.priority === 'medium' 
+                          ? 'bg-priority-medium' 
+                          : 'bg-priority-low'
+                    }`}></div>
+                    <span className="font-medium">{task.title}</span>
+                  </div>
+                  {task.due_date && (
+                    <span className="text-xs text-muted-foreground">
+                      {task.due_date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="text-xs text-muted-foreground">14:30</span>
-            </div>
-          </div>
-          <div className="border rounded-lg p-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-priority-low"></div>
-                <span className="font-medium">Revisar cartões de Biologia</span>
-              </div>
-              <span className="text-xs text-muted-foreground">19:00</span>
-            </div>
-          </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

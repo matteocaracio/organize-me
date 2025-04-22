@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { AlertCircle } from "lucide-react";
 
 interface NewNoteDialogProps {
   open: boolean;
@@ -67,22 +68,41 @@ const NewNoteDialog = ({
             <Label htmlFor="protected">Proteger com senha</Label>
           </div>
           
-          {newNote.isProtected && onPasswordChange && (
+          {newNote.isProtected && !password && (
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-600 text-sm flex items-start">
+              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">Senha global não configurada</p>
+                <p>Configure uma senha global nas opções de notas antes de proteger uma nota.</p>
+              </div>
+            </div>
+          )}
+          
+          {newNote.isProtected && password && onPasswordChange && (
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">Senha Global</Label>
               <Input 
                 id="password" 
                 type="password"
-                placeholder="Digite uma senha para proteger a nota" 
-                value={password}
-                onChange={(e) => onPasswordChange(e.target.value)}
+                placeholder="********" 
+                value="********"
+                disabled
+                className="bg-muted"
               />
+              <p className="text-xs text-muted-foreground">
+                Esta nota será protegida com sua senha global. Você pode alterar a senha global nas opções de notas.
+              </p>
             </div>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={onSave}>Salvar</Button>
+          <Button 
+            onClick={onSave}
+            disabled={newNote.isProtected && !password}
+          >
+            Salvar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

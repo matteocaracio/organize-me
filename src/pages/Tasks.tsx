@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task, NewTaskFormData, Priority } from "@/components/tasks/types";
@@ -9,6 +9,7 @@ import TaskCard from "@/components/tasks/TaskCard";
 import EmptyState from "@/components/tasks/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { compareDesc, isAfter, subHours } from "date-fns";
 
 const Tasks = () => {
   const [open, setOpen] = useState(false);
@@ -21,6 +22,30 @@ const Tasks = () => {
     priority: "medium" as Priority,
     due_date: undefined,
   });
+
+  // Helper function para ordenar tarefas por prioridade
+  const sortTasksByPriority = (tasks: Task[]) => {
+    return [...tasks].sort((a, b) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const priorityA = priorityOrder[a.priority] || 1;
+      const priorityB = priorityOrder[b.priority] || 1;
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB; // Ordena por prioridade primeiro
+      }
+      
+      // Se mesma prioridade, ordena por data (mais recente primeiro)
+      if (a.due_date && b.due_date) {
+        return compareDesc(a.due_date, b.due_date);
+      } else if (a.due_date) {
+        return -1;
+      } else if (b.due_date) {
+        return 1;
+      }
+      
+      return 0;
+    });
+  };
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -47,7 +72,32 @@ const Tasks = () => {
             status: task.is_completed ? "completed" : "pending",
             due_date: task.due_date ? new Date(task.due_date) : undefined
           }));
-          setTasks(formattedTasks);
+          
+          // Limpar tarefas concluídas há mais de 24 horas
+          const oneDayAgo = subHours(new Date(), 24);
+          const tasksToClean = formattedTasks.filter(task => 
+            task.status === "completed" && 
+            task.due_date && 
+            isAfter(oneDayAgo, task.due_date)
+          );
+          
+          if (tasksToClean.length > 0) {
+            // Limpar automaticamente as tarefas antigas concluídas
+            tasksToClean.forEach(async (task) => {
+              await deleteTask(task.id, true);
+            });
+            
+            // Remover as tarefas limpas do array local
+            const cleanedTasks = formattedTasks.filter(task => 
+              !(task.status === "completed" && 
+                task.due_date && 
+                isAfter(oneDayAgo, task.due_date))
+            );
+            
+            setTasks(cleanedTasks);
+          } else {
+            setTasks(formattedTasks);
+          }
         }
       } catch (error) {
         console.error('Error fetching tasks:', error);
@@ -105,7 +155,7 @@ const Tasks = () => {
           due_date: data.due_date ? new Date(data.due_date) : undefined
         };
 
-        setTasks([task, ...tasks]);
+        setTasks(sortTasksByPriority([task, ...tasks]));
         setNewTask({
           title: "",
           notes: "",
@@ -136,7 +186,10 @@ const Tasks = () => {
 
       const { error } = await supabase
         .from('tasks')
-        .update({ is_completed: taskToUpdate.status === "pending" })
+        .update({ 
+          is_completed: taskToUpdate.status === "pending",
+          due_date: new Date().toISOString() // Atualiza a data para poder calcular 24h depois
+        })
         .eq('id', id);
 
       if (error) {
@@ -144,9 +197,15 @@ const Tasks = () => {
       }
 
       setTasks(
-        tasks.map((task) =>
-          task.id === id ? { ...task, status: task.status === "pending" ? "completed" : "pending" } : task
-        )
+        sortTasksByPriority(tasks.map((task) =>
+          task.id === id 
+            ? { 
+                ...task, 
+                status: task.status === "pending" ? "completed" : "pending",
+                due_date: new Date() // Atualiza a data local também
+              } 
+            : task
+        ))
       );
       
       toast({
@@ -163,7 +222,7 @@ const Tasks = () => {
     }
   };
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = async (id: string, silent: boolean = false) => {
     try {
       const { error } = await supabase
         .from('tasks')
@@ -176,21 +235,26 @@ const Tasks = () => {
 
       setTasks(tasks.filter(task => task.id !== id));
       
-      toast({
-        title: "Sucesso",
-        description: "Tarefa excluída com sucesso!"
-      });
+      if (!silent) {
+        toast({
+          title: "Sucesso",
+          description: "Tarefa excluída com sucesso!"
+        });
+      }
     } catch (error) {
       console.error('Error deleting task:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível excluir a tarefa."
-      });
+      if (!silent) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível excluir a tarefa."
+        });
+      }
     }
   };
 
-  const pendingTasks = tasks.filter((task) => task.status === "pending");
+  // Organizar tarefas por prioridade
+  const pendingTasks = sortTasksByPriority(tasks.filter((task) => task.status === "pending"));
   const completedTasks = tasks.filter((task) => task.status === "completed");
 
   const handleNewTaskChange = (task: NewTaskFormData) => {
@@ -243,6 +307,9 @@ const Tasks = () => {
           </TabsContent>
           
           <TabsContent value="concluidas" className="space-y-4 mt-4">
+            <div className="text-sm text-muted-foreground mb-2">
+              Tarefas concluídas são automaticamente excluídas após 24 horas.
+            </div>
             {completedTasks.length === 0 ? (
               <EmptyState type="completed" />
             ) : (

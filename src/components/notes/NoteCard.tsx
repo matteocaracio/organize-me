@@ -1,6 +1,6 @@
 
-import React from "react";
-import { Lock, MoreVertical, PinIcon, FileEdit, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import { Lock, MoreVertical, PinIcon, FileEdit, Trash2, Eye } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -16,9 +16,12 @@ interface NoteCardProps {
   onDelete: (id: string) => void;
   onEdit: (id: string) => void;
   onTogglePin: (id: string) => void;
+  onViewNote: (id: string) => void;
 }
 
-const NoteCard = ({ note, onDelete, onEdit, onTogglePin }: NoteCardProps) => {
+const NoteCard = ({ note, onDelete, onEdit, onTogglePin, onViewNote }: NoteCardProps) => {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <Card className="card-hover">
       <CardContent className="p-4 pt-6 relative">
@@ -41,6 +44,9 @@ const NoteCard = ({ note, onDelete, onEdit, onTogglePin }: NoteCardProps) => {
                 <DropdownMenuItem onClick={() => onEdit(note.id)}>
                   <FileEdit className="h-4 w-4 mr-2" /> Editar
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onViewNote(note.id)}>
+                  <Eye className="h-4 w-4 mr-2" /> Ver Nota
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onTogglePin(note.id)}>
                   <PinIcon className="h-4 w-4 mr-2" /> 
                   {note.isPinned ? "Desafixar" : "Fixar"}
@@ -52,14 +58,24 @@ const NoteCard = ({ note, onDelete, onEdit, onTogglePin }: NoteCardProps) => {
             </DropdownMenu>
           </div>
         </div>
-        <div className="h-24 overflow-hidden">
-          <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
-            {note.content}
-          </p>
-        </div>
+        {expanded && (
+          <div className="mt-4 overflow-hidden">
+            <p className="text-sm text-muted-foreground whitespace-pre-line">
+              {note.content}
+            </p>
+          </div>
+        )}
       </CardContent>
-      <CardFooter className="px-4 py-2 text-xs text-muted-foreground border-t">
-        Atualizado em {note.date.toLocaleDateString('pt-BR')}
+      <CardFooter className="px-4 py-2 text-xs text-muted-foreground border-t flex justify-between items-center">
+        <span>Atualizado em {note.date.toLocaleDateString('pt-BR')}</span>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 px-2 text-xs"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "Ocultar" : "Expandir"}
+        </Button>
       </CardFooter>
     </Card>
   );

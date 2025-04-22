@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { 
   Play, Pause, RotateCcw, Volume2, Settings, 
-  BarChart, CheckSquare, FileText, Layers 
+  CheckSquare, FileText, Layers 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { Task } from "@/components/tasks/types";
 
 // Tipos para o timer
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
@@ -50,14 +52,51 @@ const Timer = () => {
   const [isActive, setIsActive] = useState(false);
   const [cycles, setCycles] = useState(0);
   const [volume, setVolume] = useState(50);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
   // Refs
   const timerRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
+  // Buscar tarefas do usuário
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) return;
+
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.user.id)
+          .eq('is_completed', false)
+          .order('priority', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const formattedTasks: Task[] = data.map(task => ({
+            id: task.id,
+            title: task.title,
+            notes: task.notes || "",
+            priority: (task.priority || "medium") as any,
+            status: "pending",
+            due_date: task.due_date ? new Date(task.due_date) : undefined
+          }));
+          setTasks(formattedTasks);
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+  
   // Efeito para inicializar o áudio
   useEffect(() => {
-    audioRef.current = new Audio("/notification.mp3"); // Será necessário adicionar este arquivo
+    audioRef.current = new Audio("/audio/notification.mp3");
     audioRef.current.volume = volume / 100;
     
     return () => {
@@ -197,6 +236,8 @@ const Timer = () => {
       case "longBreak":
         totalTime = settings.longBreak * 60;
         break;
+      default:
+        totalTime = settings.pomodoro * 60;
     }
     
     return 100 - (timeLeft / totalTime) * 100;
@@ -394,26 +435,25 @@ const Timer = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
                     <CheckSquare className="h-4 w-4 mr-2" />
-                    Selecionar uma tarefa
+                    {selectedTask ? selectedTask.title : "Selecionar uma tarefa"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
-                  <DropdownMenuItem>
-                    <CheckSquare className="h-4 w-4 mr-2" />
-                    Enviar relatório final
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <CheckSquare className="h-4 w-4 mr-2" />
-                    Reunião com equipe
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Layers className="h-4 w-4 mr-2" />
-                    Revisar flashcards
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Atualizar notas
-                  </DropdownMenuItem>
+                  {tasks.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      Nenhuma tarefa disponível
+                    </DropdownMenuItem>
+                  ) : (
+                    tasks.map(task => (
+                      <DropdownMenuItem 
+                        key={task.id} 
+                        onClick={() => setSelectedTask(task)}
+                      >
+                        <CheckSquare className="h-4 w-4 mr-2" />
+                        {task.title}
+                      </DropdownMenuItem>
+                    ))
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </CardContent>

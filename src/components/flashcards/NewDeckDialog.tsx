@@ -21,13 +21,18 @@ const NewDeckDialog = ({
   onNewDeckChange,
   onAddDeck,
 }: NewDeckDialogProps) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddDeck();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Criar novo deck</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input
@@ -35,6 +40,7 @@ const NewDeckDialog = ({
               placeholder="Digite o nome do deck"
               value={newDeck.name}
               onChange={(e) => onNewDeckChange({ ...newDeck, name: e.target.value })}
+              required
             />
           </div>
           <div className="space-y-2">
@@ -46,13 +52,13 @@ const NewDeckDialog = ({
               onChange={(e) => onNewDeckChange({ ...newDeck, description: e.target.value })}
             />
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={onAddDeck}>Criar</Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit">Criar</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
