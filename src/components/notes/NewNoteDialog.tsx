@@ -17,6 +17,8 @@ interface NewNoteDialogProps {
   };
   onNewNoteChange: (note: { title: string; content: string; isProtected: boolean }) => void;
   onSave: () => void;
+  password?: string;
+  onPasswordChange?: (password: string) => void;
 }
 
 const NewNoteDialog = ({ 
@@ -24,7 +26,9 @@ const NewNoteDialog = ({
   onOpenChange, 
   newNote, 
   onNewNoteChange, 
-  onSave 
+  onSave,
+  password = "",
+  onPasswordChange
 }: NewNoteDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,6 +66,19 @@ const NewNoteDialog = ({
             />
             <Label htmlFor="protected">Proteger com senha</Label>
           </div>
+          
+          {newNote.isProtected && onPasswordChange && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input 
+                id="password" 
+                type="password"
+                placeholder="Digite uma senha para proteger a nota" 
+                value={password}
+                onChange={(e) => onPasswordChange(e.target.value)}
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>

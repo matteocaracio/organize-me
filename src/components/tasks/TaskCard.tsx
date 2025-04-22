@@ -3,7 +3,7 @@ import React from "react";
 import { Task } from "./types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, Clock, ArrowUp, ArrowUpRight, MoreVertical } from "lucide-react";
+import { Check, Clock, ArrowUp, ArrowUpRight, MoreVertical, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +14,10 @@ import {
 interface TaskCardProps {
   task: Task;
   onComplete: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-const TaskCard = ({ task, onComplete }: TaskCardProps) => {
+const TaskCard = ({ task, onComplete, onDelete }: TaskCardProps) => {
   const priorityIcons = {
     high: <ArrowUp className="h-4 w-4 text-priority-high" />,
     medium: <ArrowUpRight className="h-4 w-4 text-priority-medium" />,
@@ -74,9 +75,14 @@ const TaskCard = ({ task, onComplete }: TaskCardProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Editar</DropdownMenuItem>
-              <DropdownMenuItem>Adiar</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem onClick={() => onComplete(task.id)}>
+                {task.status === "pending" ? "Concluir" : "Reabrir"}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onDelete(task.id)}
+                className="text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
                 Excluir
               </DropdownMenuItem>
             </DropdownMenuContent>
