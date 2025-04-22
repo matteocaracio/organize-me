@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Search, AlertCircle, Lock, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -321,6 +322,7 @@ const Notes = () => {
       // Se a nota for protegida, solicite a senha
       if (noteToEdit.isProtected) {
         setProtectedNoteId(id);
+        setEditingNoteId(id);
         setPasswordDialog(true);
         return;
       }
@@ -459,7 +461,7 @@ const Notes = () => {
           title: data.title,
           content: data.content || "",
           date: new Date(data.updated_at),
-          isPinned: false,
+          isPinned: data.is_pinned || false,
           isProtected: data.is_protected || false
         };
 
@@ -641,7 +643,7 @@ const Notes = () => {
         open={open}
         onOpenChange={setOpen}
         newNote={newNote}
-        onNewNoteChange={(note) => setNewNote(note)}
+        onNewNoteChange={(note) => setNewNote({...note, password: newNote.password})}
         onSave={addOrUpdateNote}
         password={newNote.password}
         onPasswordChange={(password) => setNewNote({...newNote, password})}
