@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,17 +8,22 @@ import ViewNoteDialog from "@/components/notes/ViewNoteDialog";
 import NewNoteDialog from "@/components/notes/NewNoteDialog";
 import PasswordDialog from "@/components/notes/PasswordDialog";
 import DeletedNoteList from "@/components/notes/DeletedNoteList";
+import GlobalPasswordDialog from "@/components/notes/GlobalPasswordDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Note } from "@/components/notes/types";
 import { useNotePassword } from "@/hooks/useNotePassword";
 import { useNoteOperations } from "@/hooks/useNoteOperations";
 import { useNoteFilters } from "@/hooks/useNoteFilters";
+import { supabase } from "@/integrations/supabase/client";
 
 const Notes = () => {
   const [open, setOpen] = useState(false);
   const [viewDialog, setViewDialog] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState(false);
+  const [globalPasswordDialog, setGlobalPasswordDialog] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [hasGlobalPassword, setHasGlobalPassword] = useState<boolean | null>(null);
   const [newNote, setNewNote] = useState({
     title: "",
     content: "",
@@ -32,6 +36,7 @@ const Notes = () => {
     setPassword,
     notePassword,
     validatePassword,
+    saveGlobalPassword
   } = useNotePassword();
 
   const {
@@ -50,6 +55,26 @@ const Notes = () => {
     setSearchTerm,
     filteredNotes,
   } = useNoteFilters(notes);
+
+  // Verificar se o usuário já tem uma senha global configurada
+  useEffect(() => {
+    const checkGlobalPassword = async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('note_password')
+        .eq('id', user.user.id)
+        .single();
+
+      if (!error) {
+        setHasGlobalPassword(!!data?.note_password);
+      }
+    };
+
+    checkGlobalPassword();
+  }, [globalPasswordDialog]);
 
   useEffect(() => {
     fetchNotes(showDeleted);
@@ -112,9 +137,25 @@ const Notes = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Notas</h1>
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Nova Nota
-          </Button>
+          <div className="flex gap-2">
+            {!hasGlobalPassword && (
+              <Alert className="max-w-lg">
+                <AlertDescription>
+                  Configure uma senha global para proteger suas notas.{' '}
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto" 
+                    onClick={() => setGlobalPasswordDialog(true)}
+                  >
+                    Configurar agora
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Nova Nota
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -172,6 +213,15 @@ const Notes = () => {
           onValidate={handlePasswordValidation}
           password={password}
           onPasswordChange={setPassword}
+        />
+
+        <GlobalPasswordDialog
+          open={globalPasswordDialog}
+          onOpenChange={setGlobalPasswordDialog}
+          onSave={saveGlobalPassword}
+          password={password}
+          onPasswordChange={setPassword}
+          isUpdate={false}
         />
       </div>
     </NotesProvider>
