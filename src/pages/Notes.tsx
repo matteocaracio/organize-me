@@ -1,15 +1,15 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { NotesProvider } from "@/components/notes/NotesContext";
+import { NotesProvider, useNotes } from "@/components/notes/NotesContext";
 import SearchBar from "@/components/notes/SearchBar";
 import NoteList from "@/components/notes/NoteList";
 import ViewNoteDialog from "@/components/notes/ViewNoteDialog";
 import NewNoteDialog from "@/components/notes/NewNoteDialog";
 import PasswordDialog from "@/components/notes/PasswordDialog";
-import GlobalPasswordDialog from "@/components/notes/GlobalPasswordDialog";
 import DeletedNoteList from "@/components/notes/DeletedNoteList";
 import type { Note } from "@/components/notes/types";
 
@@ -18,12 +18,10 @@ const Notes = () => {
   const [open, setOpen] = useState(false);
   const [viewDialog, setViewDialog] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState(false);
-  const [globalPasswordDialog, setGlobalPasswordDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [password, setPassword] = useState("");
-  const [globalPassword, setGlobalPassword] = useState("");
   const [notePassword, setNotePassword] = useState<string | null>(null);
   const [newNote, setNewNote] = useState({
     title: "",
@@ -43,12 +41,12 @@ const Notes = () => {
         .from('notes')
         .select('*')
         .eq('user_id', user.user.id)
-        .order('date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (showDeleted) {
-        query = query.not('deletedAt', 'is', null);
+        query = query.not('deleted', 'is', null);
       } else {
-        query = query.is('deletedAt', null);
+        query = query.is('deleted', null);
       }
 
       const { data, error } = await query;
@@ -61,11 +59,11 @@ const Notes = () => {
         const formattedNotes: Note[] = data.map(note => ({
           id: note.id,
           title: note.title,
-          content: note.content,
-          date: new Date(note.date),
-          isPinned: note.isPinned,
-          isProtected: note.isProtected,
-          deletedAt: note.deletedAt ? new Date(note.deletedAt) : undefined,
+          content: note.content || '',
+          date: new Date(note.updated_at),
+          isPinned: !!note.is_pinned,
+          isProtected: !!note.is_protected,
+          deletedAt: note.deleted ? new Date(note.deleted) : undefined,
         }));
         setNotes(formattedNotes);
       }
@@ -96,9 +94,9 @@ const Notes = () => {
       const noteData = {
         title: newNote.title,
         content: newNote.content,
-        isPinned: false,
-        isProtected: newNote.isProtected,
-        date: new Date().toISOString(),
+        is_pinned: false,
+        is_protected: newNote.isProtected,
+        updated_at: new Date().toISOString(),
         user_id: user.user.id
       };
 
@@ -127,11 +125,11 @@ const Notes = () => {
         const note: Note = {
           id: response.data.id,
           title: response.data.title,
-          content: response.data.content,
-          date: new Date(response.data.date),
-          isPinned: response.data.isPinned,
-          isProtected: response.data.isProtected,
-          deletedAt: response.data.deletedAt ? new Date(response.data.deletedAt) : undefined,
+          content: response.data.content || '',
+          date: new Date(response.data.updated_at),
+          isPinned: !!response.data.is_pinned,
+          isProtected: !!response.data.is_protected,
+          deletedAt: response.data.deleted ? new Date(response.data.deleted) : undefined,
         };
 
         if (selectedNote) {
@@ -164,7 +162,7 @@ const Notes = () => {
     try {
       const { error } = await supabase
         .from('notes')
-        .update({ deletedAt: new Date().toISOString() })
+        .update({ deleted: new Date().toISOString() })
         .eq('id', id);
 
       if (error) {
@@ -192,20 +190,26 @@ const Notes = () => {
   const validatePassword = async () => {
     if (!selectedNote) return;
 
+    // Instead of querying note_passwords, we'll check the password in the notes table
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      // Get the profile with the note_password
       const { data, error } = await supabase
-        .from('note_passwords')
-        .select('password')
-        .eq('note_id', selectedNote.id)
+        .from('profiles')
+        .select('note_password')
+        .eq('id', user.user.id)
         .single();
 
       if (error) {
         throw error;
       }
 
-      if (data && data.password === password) {
+      if (data && data.note_password === password) {
         setNotePassword(password);
         setPasswordDialog(false);
+        setViewDialog(true);
         toast({
           title: "Sucesso",
           description: "Senha validada com sucesso!"
@@ -236,7 +240,7 @@ const Notes = () => {
 
       const { error } = await supabase
         .from('notes')
-        .update({ isPinned: !noteToUpdate.isPinned })
+        .update({ is_pinned: !noteToUpdate.isPinned })
         .eq('id', id);
 
       if (error) {
@@ -288,21 +292,140 @@ const Notes = () => {
       }
     }
   };
+  
+  const handleRestoreNote = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({ deleted: null })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setNotes(notes.filter(note => note.id !== id));
+
+      toast({
+        title: "Sucesso",
+        description: "Nota restaurada com sucesso!"
+      });
+    } catch (error) {
+      console.error('Error restoring note:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível restaurar a nota."
+      });
+    }
+  };
+
+  const handlePermanentDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setNotes(notes.filter(note => note.id !== id));
+
+      toast({
+        title: "Sucesso",
+        description: "Nota excluída permanentemente!"
+      });
+    } catch (error) {
+      console.error('Error permanently deleting note:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível excluir permanentemente a nota."
+      });
+    }
+  };
+
+  const handleClearTrash = async () => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .not('deleted', 'is', null);
+
+      if (error) {
+        throw error;
+      }
+
+      setNotes([]);
+
+      toast({
+        title: "Sucesso",
+        description: "Lixeira esvaziada com sucesso!"
+      });
+    } catch (error) {
+      console.error('Error clearing trash:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível esvaziar a lixeira."
+      });
+    }
+  };
 
   useEffect(() => {
     fetchNotes();
   }, [showDeleted]);
 
   useEffect(() => {
-    const filtered = notes.filter((note) => {
-      const searchTermLower = searchTerm.toLowerCase();
-      return (
-        note.title.toLowerCase().includes(searchTermLower) ||
-        note.content.toLowerCase().includes(searchTermLower)
-      );
-    });
-    setNotes(filtered);
-  }, [notes, searchTerm]);
+    if (notes.length > 0) {
+      const filtered = notes.filter((note) => {
+        const searchTermLower = searchTerm.toLowerCase();
+        return (
+          note.title.toLowerCase().includes(searchTermLower) ||
+          note.content.toLowerCase().includes(searchTermLower)
+        );
+      });
+      setNotes(filtered);
+    }
+  }, [searchTerm]);
+
+  const saveGlobalPassword = async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Você precisa estar logado para configurar a senha global."
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ note_password: password })
+        .eq('id', user.user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setNotePassword(password);
+      toast({
+        title: "Sucesso",
+        description: "Senha global salva com sucesso!"
+      });
+    } catch (error) {
+      console.error('Error saving global password:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar a senha global."
+      });
+    }
+  };
 
   return (
     <NotesProvider>
@@ -327,7 +450,12 @@ const Notes = () => {
         </div>
 
         {showDeleted ? (
-          <DeletedNoteList notes={notes} onRestore={fetchNotes} />
+          <DeletedNoteList 
+            notes={notes} 
+            onRestore={handleRestoreNote}
+            onDelete={handlePermanentDelete}
+            onClearTrash={handleClearTrash}
+          />
         ) : (
           <NoteList
             onDelete={deleteNote}
@@ -365,55 +493,6 @@ const Notes = () => {
           onValidate={validatePassword}
           password={password}
           onPasswordChange={setPassword}
-        />
-
-        <GlobalPasswordDialog
-          open={globalPasswordDialog}
-          onOpenChange={setGlobalPasswordDialog}
-          onSave={async () => {
-            try {
-              const { data: user } = await supabase.auth.getUser();
-              if (!user.user) {
-                toast({
-                  variant: "destructive",
-                  title: "Erro",
-                  description: "Você precisa estar logado para configurar a senha global."
-                });
-                return;
-              }
-        
-              const { data, error } = await supabase
-                .from('user_passwords')
-                .upsert(
-                  { user_id: user.user.id, password: globalPassword },
-                  { onConflict: 'user_id' }
-                )
-                .select()
-                .single();
-        
-              if (error) {
-                throw error;
-              }
-        
-              setNotePassword(globalPassword);
-              setGlobalPasswordDialog(false);
-              setNotePassword(globalPassword);
-              toast({
-                title: "Sucesso",
-                description: "Senha global salva com sucesso!"
-              });
-            } catch (error) {
-              console.error('Error saving global password:', error);
-              toast({
-                variant: "destructive",
-                title: "Erro",
-                description: "Não foi possível salvar a senha global."
-              });
-            }
-          }}
-          password={globalPassword}
-          onPasswordChange={setGlobalPassword}
-          isUpdate={!!notePassword}
         />
       </div>
     </NotesProvider>
