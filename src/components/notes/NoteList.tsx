@@ -2,7 +2,6 @@
 import { useNotes } from "./NotesContext";
 import NoteCard from "./NoteCard";
 import EmptyState from "./EmptyState";
-import type { Note } from "./types";
 
 interface NoteListProps {
   onDelete: (id: string) => void;
