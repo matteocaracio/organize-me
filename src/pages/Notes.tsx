@@ -98,6 +98,15 @@ const Notes = () => {
     }
   };
 
+  const handleNewNoteChange = (note: { title: string; content: string; isProtected: boolean }) => {
+    setNewNote({
+      ...newNote,
+      title: note.title,
+      content: note.content,
+      isProtected: note.isProtected
+    });
+  };
+
   return (
     <NotesProvider>
       <div className="space-y-6">
@@ -129,7 +138,6 @@ const Notes = () => {
           />
         ) : (
           <NoteList
-            notes={filteredNotes}
             onDelete={deleteNote}
             onEdit={handleEditNote}
             onTogglePin={togglePin}
@@ -141,7 +149,7 @@ const Notes = () => {
           open={open}
           onOpenChange={setOpen}
           newNote={newNote}
-          onNewNoteChange={setNewNote}
+          onNewNoteChange={handleNewNoteChange}
           onSave={handleSaveNote}
           password={notePassword}
         />
