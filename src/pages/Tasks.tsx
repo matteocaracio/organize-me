@@ -1,11 +1,11 @@
-
 import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, CalendarDays, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task, NewTaskFormData, Priority } from "@/components/tasks/types";
 import NewTaskDialog from "@/components/tasks/NewTaskDialog";
 import TaskCard from "@/components/tasks/TaskCard";
+import TaskCalendarView from "@/components/tasks/TaskCalendarView";
 import EmptyState from "@/components/tasks/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ const Tasks = () => {
     priority: "medium" as Priority,
     due_date: undefined,
   });
+  const [currentView, setCurrentView] = useState<"list" | "calendar">("list");
 
   // Helper function para ordenar tarefas por prioridade
   const sortTasksByPriority = (tasks: Task[]) => {
@@ -265,9 +266,22 @@ const Tasks = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Tarefas</h1>
-        <Button size="sm" onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Nova Tarefa
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setCurrentView(currentView === "list" ? "calendar" : "list")}
+          >
+            {currentView === "list" ? (
+              <><CalendarDays className="h-4 w-4 mr-1" /> Calendário</>
+            ) : (
+              <><LayoutList className="h-4 w-4 mr-1" /> Lista</>
+            )}
+          </Button>
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Nova Tarefa
+          </Button>
+        </div>
       </div>
 
       <NewTaskDialog
@@ -280,6 +294,12 @@ const Tasks = () => {
 
       {loading ? (
         <div className="text-center py-8">Carregando tarefas...</div>
+      ) : currentView === "calendar" ? (
+        <TaskCalendarView
+          tasks={sortTasksByPriority([...pendingTasks, ...completedTasks])}
+          onComplete={completeTask}
+          onDelete={deleteTask}
+        />
       ) : (
         <Tabs defaultValue="pendentes">
           <TabsList className="w-full">
