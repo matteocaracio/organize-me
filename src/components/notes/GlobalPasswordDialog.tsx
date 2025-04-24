@@ -14,7 +14,7 @@ import {
 interface GlobalPasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: () => void;
+  onSave: () => Promise<boolean>; // Updated to match the expected return type
   password: string;
   onPasswordChange: (password: string) => void;
   isUpdate: boolean;

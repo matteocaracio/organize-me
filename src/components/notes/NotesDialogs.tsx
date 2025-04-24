@@ -28,7 +28,7 @@ interface NotesDialogsProps {
   onPasswordChange: (value: string) => void;
   globalPasswordDialog: boolean;
   setGlobalPasswordDialog: (open: boolean) => void;
-  onSaveGlobalPassword: () => Promise<void>;
+  onSaveGlobalPassword: () => Promise<boolean>; // Changed from Promise<void> to Promise<boolean>
   isUpdatePassword: boolean;
   setIsUpdatePassword: (value: boolean) => void;
 }
