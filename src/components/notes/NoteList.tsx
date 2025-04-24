@@ -2,24 +2,24 @@
 import { useNotes } from "./NotesContext";
 import NoteCard from "./NoteCard";
 import EmptyState from "./EmptyState";
+import type { Note } from "./types";
 
 interface NoteListProps {
   onDelete: (id: string) => void;
   onEdit: (id: string) => void;
   onTogglePin: (id: string) => void;
   onViewNote: (id: string) => void;
+  notes: Note[];
 }
 
-const NoteList = ({ onDelete, onEdit, onTogglePin, onViewNote }: NoteListProps) => {
-  const { filteredNotes } = useNotes();
-
-  if (filteredNotes.length === 0) {
+const NoteList = ({ onDelete, onEdit, onTogglePin, onViewNote, notes }: NoteListProps) => {
+  if (notes.length === 0) {
     return <EmptyState />;
   }
 
   // Separate pinned and unpinned notes
-  const pinnedNotes = filteredNotes.filter((note) => note.isPinned);
-  const unpinnedNotes = filteredNotes.filter((note) => !note.isPinned);
+  const pinnedNotes = notes.filter((note) => note.isPinned);
+  const unpinnedNotes = notes.filter((note) => !note.isPinned);
 
   return (
     <div className="space-y-6">

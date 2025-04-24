@@ -2,25 +2,23 @@
 import { useState, useEffect } from "react";
 import type { Note } from "@/components/notes/types";
 
-export const useNoteFilters = (allNotes: Note[]) => {
+export const useNoteFilters = (notes: Note[]) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredNotes, setFilteredNotes] = useState<Note[]>(allNotes);
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>(notes);
 
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredNotes(allNotes);
-      return;
-    }
-
-    const filtered = allNotes.filter((note) => {
-      const searchTermLower = searchTerm.toLowerCase();
-      return (
-        note.title.toLowerCase().includes(searchTermLower) ||
-        note.content.toLowerCase().includes(searchTermLower)
+    if (searchTerm.trim() === "") {
+      setFilteredNotes(notes);
+    } else {
+      const lowercaseSearch = searchTerm.toLowerCase();
+      const filtered = notes.filter(
+        (note) =>
+          note.title.toLowerCase().includes(lowercaseSearch) ||
+          note.content.toLowerCase().includes(lowercaseSearch)
       );
-    });
-    setFilteredNotes(filtered);
-  }, [searchTerm, allNotes]);
+      setFilteredNotes(filtered);
+    }
+  }, [notes, searchTerm]);
 
   return {
     searchTerm,

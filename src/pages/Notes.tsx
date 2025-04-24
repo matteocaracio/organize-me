@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotesProvider } from "@/components/notes/NotesContext";
 import SearchBar from "@/components/notes/SearchBar";
@@ -12,7 +13,7 @@ import GlobalPasswordDialog from "@/components/notes/GlobalPasswordDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Note } from "@/components/notes/types";
 import { useNotePassword } from "@/hooks/useNotePassword";
-import { useNoteOperations } from "@/hooks/useNoteOperations";
+import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 import { useNoteFilters } from "@/hooks/useNoteFilters";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +22,7 @@ const Notes = () => {
   const [viewDialog, setViewDialog] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState(false);
   const [globalPasswordDialog, setGlobalPasswordDialog] = useState(false);
+  const [isUpdatePassword, setIsUpdatePassword] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [hasGlobalPassword, setHasGlobalPassword] = useState<boolean | null>(null);
@@ -123,6 +125,11 @@ const Notes = () => {
     }
   };
 
+  const handleChangePassword = () => {
+    setIsUpdatePassword(true);
+    setGlobalPasswordDialog(true);
+  };
+
   const handleNewNoteChange = (note: { title: string; content: string; isProtected: boolean }) => {
     setNewNote({
       ...newNote,
@@ -151,6 +158,11 @@ const Notes = () => {
                   </Button>
                 </AlertDescription>
               </Alert>
+            )}
+            {hasGlobalPassword && (
+              <Button variant="outline" onClick={handleChangePassword}>
+                <Settings className="h-4 w-4 mr-2" /> Alterar Senha
+              </Button>
             )}
             <Button onClick={() => setOpen(true)}>
               <Plus className="h-4 w-4 mr-2" /> Nova Nota
@@ -183,6 +195,7 @@ const Notes = () => {
             onEdit={handleEditNote}
             onTogglePin={togglePin}
             onViewNote={handleViewNote}
+            notes={filteredNotes}
           />
         )}
 
@@ -217,11 +230,14 @@ const Notes = () => {
 
         <GlobalPasswordDialog
           open={globalPasswordDialog}
-          onOpenChange={setGlobalPasswordDialog}
+          onOpenChange={(open) => {
+            setGlobalPasswordDialog(open);
+            if (!open) setIsUpdatePassword(false);
+          }}
           onSave={saveGlobalPassword}
           password={password}
           onPasswordChange={setPassword}
-          isUpdate={false}
+          isUpdate={isUpdatePassword}
         />
       </div>
     </NotesProvider>
