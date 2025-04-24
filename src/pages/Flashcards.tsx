@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Plus, Search, Book, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +8,15 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Deck, NewDeckFormData, NewFlashcardFormData } from "@/components/flashcards/types";
 import NewDeckDialog from "@/components/flashcards/NewDeckDialog";
 import DeckCard from "@/components/flashcards/DeckCard";
 import StudyMode from "@/components/flashcards/StudyMode";
 
 const Flashcards = () => {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [studyMode, setStudyMode] = useState(false);
@@ -21,6 +25,8 @@ const Flashcards = () => {
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [addingCard, setAddingCard] = useState(false);
   const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [newDeck, setNewDeck] = useState<NewDeckFormData>({
     name: "",
@@ -32,132 +38,223 @@ const Flashcards = () => {
     answer: ""
   });
 
-  const [decks, setDecks] = useState<Deck[]>([
-    {
-      id: "1",
-      name: "Matemática Básica",
-      description: "Conceitos fundamentais de matemática",
-      cards: [
-        {
-          id: "101",
-          question: "Quanto é 2 + 2?",
-          answer: "4",
-          level: 3,
-          nextReview: new Date(2025, 3, 22)
-        },
-        {
-          id: "102",
-          question: "O que é um número primo?",
-          answer: "Um número natural maior que 1 que só é divisível por 1 e por ele mesmo.",
-          level: 2,
-          nextReview: new Date(2025, 3, 21)
-        },
-        {
-          id: "103",
-          question: "Qual é a raiz quadrada de 64?",
-          answer: "8",
-          level: 4,
-          nextReview: new Date(2025, 3, 25)
+  // Fetch decks from Supabase
+  const fetchDecks = async () => {
+    try {
+      setIsLoading(true);
+      const { data: user } = await supabase.auth.getUser();
+      
+      if (!user.user) {
+        setDecks([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      const { data: deckData, error: deckError } = await supabase
+        .from('flashcard_decks')
+        .select('*')
+        .eq('user_id', user.user.id);
+        
+      if (deckError) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível carregar os decks."
+        });
+        console.error(deckError);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get cards for each deck
+      const decksWithCards = await Promise.all(deckData.map(async (deck) => {
+        const { data: cards, error: cardsError } = await supabase
+          .from('flashcards')
+          .select('*')
+          .eq('deck_id', deck.id);
+          
+        if (cardsError) {
+          console.error(cardsError);
+          return {
+            ...deck,
+            cards: [],
+            progress: 0
+          };
         }
-      ],
-      lastStudied: new Date(2025, 3, 19),
-      progress: 65
-    },
-    {
-      id: "2",
-      name: "Vocabulário de Inglês",
-      description: "Palavras e frases para conversação",
-      cards: [
-        {
-          id: "201",
-          question: "Como se diz 'Olá' em inglês?",
-          answer: "Hello",
-          level: 5,
-          nextReview: new Date(2025, 3, 30)
-        },
-        {
-          id: "202",
-          question: "Como se diz 'Obrigado' em inglês?",
-          answer: "Thank you",
-          level: 4,
-          nextReview: new Date(2025, 3, 26)
-        }
-      ],
-      lastStudied: new Date(2025, 3, 20),
-      progress: 85
-    },
-    {
-      id: "3",
-      name: "Biologia Celular",
-      description: "Estrutura e função das células",
-      cards: [
-        {
-          id: "301",
-          question: "Qual é a função da mitocôndria?",
-          answer: "Produzir energia para a célula através da respiração celular.",
-          level: 1,
-          nextReview: new Date(2025, 3, 21)
-        },
-        {
-          id: "302",
-          question: "O que é o citoplasma?",
-          answer: "É o material contido no interior da célula, entre a membrana plasmática e o núcleo.",
+        
+        // Format the cards
+        const formattedCards = cards.map(card => ({
+          id: card.id,
+          question: card.question,
+          answer: card.answer,
           level: 0,
-          nextReview: new Date(2025, 3, 21)
-        },
-        {
-          id: "303",
-          question: "O que é DNA?",
-          answer: "Ácido desoxirribonucleico, a molécula que contém as instruções genéticas para o desenvolvimento e funcionamento de todos os organismos vivos.",
-          level: 2,
-          nextReview: new Date(2025, 3, 22)
-        }
-      ],
-      progress: 30
+          nextReview: new Date()
+        }));
+        
+        return {
+          id: deck.id,
+          name: deck.name,
+          description: deck.description || '',
+          cards: formattedCards,
+          lastStudied: deck.updated_at ? new Date(deck.updated_at) : undefined,
+          progress: 0
+        };
+      }));
+      
+      setDecks(decksWithCards);
+    } catch (error) {
+      console.error("Error fetching decks:", error);
+      toast({
+        variant: "destructive", 
+        title: "Erro",
+        description: "Falha ao carregar os decks."
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ]);
-
-  const deleteDeck = (id: string) => {
-    setDecks(decks.filter(deck => deck.id !== id));
   };
 
-  const addFlashcard = (deckId: string) => {
+  useEffect(() => {
+    fetchDecks();
+  }, []);
+
+  const deleteDeck = async (id: string) => {
+    try {
+      // First delete all flashcards associated with the deck
+      const { error: flashcardError } = await supabase
+        .from('flashcards')
+        .delete()
+        .eq('deck_id', id);
+        
+      if (flashcardError) throw flashcardError;
+      
+      // Then delete the deck
+      const { error: deckError } = await supabase
+        .from('flashcard_decks')
+        .delete()
+        .eq('id', id);
+        
+      if (deckError) throw deckError;
+      
+      // Update local state
+      setDecks(decks.filter(deck => deck.id !== id));
+      
+      toast({
+        title: "Sucesso",
+        description: "Deck excluído com sucesso!"
+      });
+    } catch (error) {
+      console.error("Error deleting deck:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível excluir o deck."
+      });
+    }
+  };
+
+  const addFlashcard = async (deckId: string) => {
     if (!newFlashcard.question.trim() || !newFlashcard.answer.trim()) return;
 
-    setDecks(decks.map(deck => {
-      if (deck.id === deckId) {
-        return {
-          ...deck,
-          cards: [...deck.cards, {
-            id: Date.now().toString(),
-            question: newFlashcard.question,
-            answer: newFlashcard.answer,
-            level: 0,
-            nextReview: new Date()
-          }]
-        };
-      }
-      return deck;
-    }));
-
-    setNewFlashcard({ question: "", answer: "" });
-    setAddingCard(false);
+    try {
+      const { data, error } = await supabase
+        .from('flashcards')
+        .insert({
+          question: newFlashcard.question,
+          answer: newFlashcard.answer,
+          deck_id: deckId
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      // Update local state
+      setDecks(decks.map(deck => {
+        if (deck.id === deckId) {
+          return {
+            ...deck,
+            cards: [...deck.cards, {
+              id: data.id,
+              question: data.question,
+              answer: data.answer,
+              level: 0,
+              nextReview: new Date()
+            }]
+          };
+        }
+        return deck;
+      }));
+      
+      setNewFlashcard({ question: "", answer: "" });
+      setAddingCard(false);
+      
+      toast({
+        title: "Sucesso",
+        description: "Cartão adicionado com sucesso!"
+      });
+    } catch (error) {
+      console.error("Error adding flashcard:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível adicionar o cartão."
+      });
+    }
   };
 
-  const addDeck = () => {
+  const addDeck = async () => {
     if (newDeck.name.trim() === "") return;
     
-    const deck: Deck = {
-      id: Date.now().toString(),
-      name: newDeck.name,
-      description: newDeck.description,
-      cards: [],
-      progress: 0
-    };
-    
-    setDecks([...decks, deck]);
-    setNewDeck({ name: "", description: "" });
-    setOpen(false);
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      
+      if (!user.user) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Você precisa estar logado para criar um deck."
+        });
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('flashcard_decks')
+        .insert({
+          name: newDeck.name,
+          description: newDeck.description,
+          user_id: user.user.id
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      // Add new deck to state
+      const newDeckObj: Deck = {
+        id: data.id,
+        name: data.name,
+        description: data.description || '',
+        cards: [],
+        progress: 0
+      };
+      
+      setDecks([...decks, newDeckObj]);
+      setNewDeck({ name: "", description: "" });
+      setOpen(false);
+      
+      toast({
+        title: "Sucesso",
+        description: "Deck criado com sucesso!"
+      });
+    } catch (error) {
+      console.error("Error adding deck:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível criar o deck."
+      });
+    }
   };
 
   const startStudy = (deck: Deck) => {
@@ -228,6 +325,9 @@ const Flashcards = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Novo Deck
+          </Button>
           <NewDeckDialog
             open={open}
             onOpenChange={setOpen}
@@ -278,44 +378,23 @@ const Flashcards = () => {
         </DialogContent>
       </Dialog>
 
-      <Tabs defaultValue="decks">
+      <Tabs defaultValue="today">
         <TabsList className="w-full">
-          <TabsTrigger value="decks" className="flex-1">
-            Seus Decks
-          </TabsTrigger>
           <TabsTrigger value="today" className="flex-1">
             Para Revisar Hoje
           </TabsTrigger>
+          <TabsTrigger value="decks" className="flex-1">
+            Seus Decks
+          </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="decks" className="mt-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredDecks.length === 0 ? (
-              <div className="text-center p-6 text-muted-foreground col-span-full">
-                <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Nenhum deck encontrado. Crie um novo deck!</p>
-              </div>
-            ) : (
-              filteredDecks.map((deck) => (
-                <DeckCard
-                  key={deck.id}
-                  deck={deck}
-                  onStudy={startStudy}
-                  onEdit={(id) => console.log(`Editing deck with ID: ${id}`)}
-                  onDelete={deleteDeck}
-                  onAddCard={(deck) => {
-                    setEditingDeck(deck);
-                    setAddingCard(true);
-                  }}
-                />
-              ))
-            )}
-          </div>
-        </TabsContent>
         
         <TabsContent value="today" className="mt-4">
           <div className="grid gap-4">
-            {totalCardsForToday === 0 ? (
+            {isLoading ? (
+              <div className="text-center p-6 text-muted-foreground">
+                <p>Carregando decks...</p>
+              </div>
+            ) : totalCardsForToday === 0 ? (
               <div className="text-center p-6 text-muted-foreground">
                 <Book className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>Você não tem cartões para revisar hoje. Bom trabalho!</p>
@@ -341,6 +420,35 @@ const Flashcards = () => {
                   </Card>
                 );
               }).filter(Boolean)
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="decks" className="mt-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {isLoading ? (
+              <div className="text-center p-6 text-muted-foreground col-span-full">
+                <p>Carregando decks...</p>
+              </div>
+            ) : filteredDecks.length === 0 ? (
+              <div className="text-center p-6 text-muted-foreground col-span-full">
+                <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhum deck encontrado. Crie um novo deck!</p>
+              </div>
+            ) : (
+              filteredDecks.map((deck) => (
+                <DeckCard
+                  key={deck.id}
+                  deck={deck}
+                  onStudy={startStudy}
+                  onEdit={(id) => console.log(`Editing deck with ID: ${id}`)}
+                  onDelete={deleteDeck}
+                  onAddCard={(deck) => {
+                    setEditingDeck(deck);
+                    setAddingCard(true);
+                  }}
+                />
+              ))
             )}
           </div>
         </TabsContent>
