@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Note } from "@/components/notes/types";
@@ -89,9 +88,37 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
     }
   };
 
+  const restoreNote = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({ deleted: null })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotes(notes.filter(note => note.id !== id));
+
+      toast({
+        title: "Sucesso",
+        description: "Nota restaurada com sucesso!"
+      });
+      return true;
+    } catch (error) {
+      console.error('Error restoring note:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível restaurar a nota."
+      });
+      return false;
+    }
+  };
+
   return {
     deleteNote,
     permanentlyDeleteNote,
     clearTrash,
+    restoreNote,
   };
 };

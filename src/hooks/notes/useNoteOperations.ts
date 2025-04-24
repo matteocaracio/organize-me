@@ -15,6 +15,7 @@ export const useNoteOperations = () => {
     deleteNote,
     permanentlyDeleteNote,
     clearTrash,
+    restoreNote,
   } = useNoteDeleteOperations(notes, setNotes);
 
   const { togglePin } = useNotePinOperations(notes, setNotes);
@@ -28,5 +29,6 @@ export const useNoteOperations = () => {
     togglePin,
     permanentlyDeleteNote,
     clearTrash,
+    restoreNote,
   };
 };
