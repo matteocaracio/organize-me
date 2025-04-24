@@ -1,24 +1,19 @@
 
 import React, { useState, useEffect } from "react";
-import { Plus, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { NotesProvider } from "@/components/notes/NotesContext";
-import SearchBar from "@/components/notes/SearchBar";
 import NoteList from "@/components/notes/NoteList";
-import ViewNoteDialog from "@/components/notes/ViewNoteDialog";
-import NewNoteDialog from "@/components/notes/NewNoteDialog";
-import PasswordDialog from "@/components/notes/PasswordDialog";
 import DeletedNoteList from "@/components/notes/DeletedNoteList";
-import GlobalPasswordDialog from "@/components/notes/GlobalPasswordDialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Note } from "@/components/notes/types";
 import { useNotePassword } from "@/hooks/useNotePassword";
 import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 import { useNoteFilters } from "@/hooks/useNoteFilters";
 import { supabase } from "@/integrations/supabase/client";
+import NotesHeader from "@/components/notes/NotesHeader";
+import NotesToolbar from "@/components/notes/NotesToolbar";
+import NotesDialogs from "@/components/notes/NotesDialogs";
 
 const Notes = () => {
-  const [open, setOpen] = useState(false);
+  const [newNoteDialog, setNewNoteDialog] = useState(false);
   const [viewDialog, setViewDialog] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState(false);
   const [globalPasswordDialog, setGlobalPasswordDialog] = useState(false);
@@ -58,7 +53,6 @@ const Notes = () => {
     filteredNotes,
   } = useNoteFilters(notes);
 
-  // Verificar se o usuário já tem uma senha global configurada
   useEffect(() => {
     const checkGlobalPassword = async () => {
       const { data: user } = await supabase.auth.getUser();
@@ -104,14 +98,14 @@ const Notes = () => {
         isProtected: noteToEdit.isProtected,
         password: ""
       });
-      setOpen(true);
+      setNewNoteDialog(true);
     }
   };
 
   const handleSaveNote = async () => {
     const savedNote = await addOrUpdateNote(newNote, selectedNote);
     if (savedNote) {
-      setOpen(false);
+      setNewNoteDialog(false);
       setNewNote({ title: "", content: "", isProtected: false, password: "" });
       setSelectedNote(null);
     }
@@ -125,62 +119,25 @@ const Notes = () => {
     }
   };
 
-  const handleChangePassword = () => {
-    setIsUpdatePassword(true);
-    setGlobalPasswordDialog(true);
-  };
-
-  const handleNewNoteChange = (note: { title: string; content: string; isProtected: boolean }) => {
-    setNewNote({
-      ...newNote,
-      title: note.title,
-      content: note.content,
-      isProtected: note.isProtected
-    });
-  };
-
   return (
     <NotesProvider>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Notas</h1>
-          <div className="flex gap-2">
-            {!hasGlobalPassword && (
-              <Alert className="max-w-lg">
-                <AlertDescription>
-                  Configure uma senha global para proteger suas notas.{' '}
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto" 
-                    onClick={() => setGlobalPasswordDialog(true)}
-                  >
-                    Configurar agora
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            {hasGlobalPassword && (
-              <Button variant="outline" onClick={handleChangePassword}>
-                <Settings className="h-4 w-4 mr-2" /> Alterar Senha
-              </Button>
-            )}
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" /> Nova Nota
-            </Button>
-          </div>
-        </div>
+        <NotesHeader
+          hasGlobalPassword={hasGlobalPassword}
+          onNewNote={() => setNewNoteDialog(true)}
+          onChangePassword={() => {
+            setIsUpdatePassword(true);
+            setGlobalPasswordDialog(true);
+          }}
+          onConfigurePassword={() => setGlobalPasswordDialog(true)}
+        />
 
-        <div className="flex items-center space-x-4">
-          <div className="flex-1">
-            <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowDeleted(!showDeleted)}
-          >
-            {showDeleted ? "Ver Notas Ativas" : "Ver Lixeira"}
-          </Button>
-        </div>
+        <NotesToolbar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          showDeleted={showDeleted}
+          onToggleDeleted={() => setShowDeleted(!showDeleted)}
+        />
 
         {showDeleted ? (
           <DeletedNoteList
@@ -199,45 +156,36 @@ const Notes = () => {
           />
         )}
 
-        <NewNoteDialog
-          open={open}
-          onOpenChange={setOpen}
-          newNote={newNote}
-          onNewNoteChange={handleNewNoteChange}
-          onSave={handleSaveNote}
-          password={notePassword}
-        />
-
-        <ViewNoteDialog
-          open={viewDialog}
-          onOpenChange={setViewDialog}
-          note={selectedNote}
-          onEdit={() => {
+        <NotesDialogs
+          viewDialog={viewDialog}
+          setViewDialog={setViewDialog}
+          selectedNote={selectedNote}
+          onEditNote={() => {
             setViewDialog(false);
             if (selectedNote) {
               handleEditNote(selectedNote.id);
             }
           }}
-        />
-
-        <PasswordDialog
-          open={passwordDialog}
-          onOpenChange={setPasswordDialog}
-          onValidate={handlePasswordValidation}
+          newNoteDialog={newNoteDialog}
+          setNewNoteDialog={setNewNoteDialog}
+          newNote={newNote}
+          onNewNoteChange={(note) => setNewNote({
+            ...newNote,
+            title: note.title,
+            content: note.content,
+            isProtected: note.isProtected
+          })}
+          onSaveNote={handleSaveNote}
           password={password}
+          passwordDialog={passwordDialog}
+          setPasswordDialog={setPasswordDialog}
+          onValidatePassword={handlePasswordValidation}
           onPasswordChange={setPassword}
-        />
-
-        <GlobalPasswordDialog
-          open={globalPasswordDialog}
-          onOpenChange={(open) => {
-            setGlobalPasswordDialog(open);
-            if (!open) setIsUpdatePassword(false);
-          }}
-          onSave={saveGlobalPassword}
-          password={password}
-          onPasswordChange={setPassword}
-          isUpdate={isUpdatePassword}
+          globalPasswordDialog={globalPasswordDialog}
+          setGlobalPasswordDialog={setGlobalPasswordDialog}
+          onSaveGlobalPassword={saveGlobalPassword}
+          isUpdatePassword={isUpdatePassword}
+          setIsUpdatePassword={setIsUpdatePassword}
         />
       </div>
     </NotesProvider>
