@@ -183,7 +183,7 @@ const Notes = () => {
           onPasswordChange={setPassword}
           globalPasswordDialog={globalPasswordDialog}
           setGlobalPasswordDialog={setGlobalPasswordDialog}
-          onSaveGlobalPassword={saveGlobalPassword}
+          onSaveGlobalPassword={saveGlobalPassword} // This already returns Promise<boolean> from useNotePassword hook
           isUpdatePassword={isUpdatePassword}
           setIsUpdatePassword={setIsUpdatePassword}
         />

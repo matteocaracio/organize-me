@@ -8,7 +8,7 @@ export const useNotePassword = () => {
   const [notePassword, setNotePassword] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const validatePassword = async () => {
+  const validatePassword = async (): Promise<boolean> => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return false;
@@ -51,7 +51,7 @@ export const useNotePassword = () => {
     }
   };
 
-  const saveGlobalPassword = async () => {
+  const saveGlobalPassword = async (): Promise<boolean> => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
