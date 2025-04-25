@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Task, NewTaskFormData } from "@/components/tasks/types";
+import { Task, NewTaskFormData, Priority } from "@/components/tasks/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaskSorting } from "./useTaskSorting";
 
@@ -44,7 +44,7 @@ export const useTaskOperations = () => {
           id: data.id,
           title: data.title,
           notes: data.notes || "",
-          priority: (data.priority || "medium"),
+          priority: (data.priority || "medium") as Priority,
           status: "pending",
           due_date: data.due_date ? new Date(data.due_date) : undefined
         };

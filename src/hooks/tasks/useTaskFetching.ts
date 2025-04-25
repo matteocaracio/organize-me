@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Task } from "@/components/tasks/types";
+import { Task, Priority } from "@/components/tasks/types";
 import { subHours, isAfter } from "date-fns";
 
 export const useTaskFetching = (
@@ -31,7 +31,7 @@ export const useTaskFetching = (
             id: task.id,
             title: task.title,
             notes: task.notes || "",
-            priority: (task.priority || "medium"),
+            priority: (task.priority || "medium") as Priority,
             status: task.is_completed ? "completed" : "pending",
             due_date: task.due_date ? new Date(task.due_date) : undefined
           }));
