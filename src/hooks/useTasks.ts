@@ -134,7 +134,22 @@ export const useTasks = () => {
           due_date: data.due_date ? new Date(data.due_date) : undefined
         };
 
-        setTasks(sortTasksByPriority([task, ...tasks]));
+        // Substituir o setTasks para evitar adicionar tarefas duplicadas
+        setTasks(prevTasks => {
+          // Verificamos se a tarefa já existe no array
+          const existingTaskIndex = prevTasks.findIndex(t => t.id === task.id);
+          
+          if (existingTaskIndex >= 0) {
+            // Se a tarefa já existe, substituímos ela
+            const updatedTasks = [...prevTasks];
+            updatedTasks[existingTaskIndex] = task;
+            return sortTasksByPriority(updatedTasks);
+          } else {
+            // Se não existe, adicionamos normalmente
+            return sortTasksByPriority([task, ...prevTasks]);
+          }
+        });
+
         toast({
           title: "Sucesso",
           description: "Tarefa adicionada com sucesso!"
