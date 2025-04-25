@@ -4,6 +4,7 @@ import ViewNoteDialog from "./ViewNoteDialog";
 import NewNoteDialog from "./NewNoteDialog";
 import PasswordDialog from "./PasswordDialog";
 import GlobalPasswordDialog from "./GlobalPasswordDialog";
+import GlobalPasswordUpdateDialog from "./GlobalPasswordUpdateDialog";
 import type { Note } from "./types";
 
 interface NotesDialogsProps {
@@ -28,9 +29,20 @@ interface NotesDialogsProps {
   onPasswordChange: (value: string) => void;
   globalPasswordDialog: boolean;
   setGlobalPasswordDialog: (open: boolean) => void;
-  onSaveGlobalPassword: () => Promise<boolean>; // Changed from Promise<void> to Promise<boolean>
+  onSaveGlobalPassword: () => Promise<boolean>;
   isUpdatePassword: boolean;
   setIsUpdatePassword: (value: boolean) => void;
+  // New props for password update
+  passwordUpdateDialog: boolean;
+  setPasswordUpdateDialog: (open: boolean) => void;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+  passwordMismatch: boolean;
+  onCurrentPasswordChange: (value: string) => void;
+  onNewPasswordChange: (value: string) => void;
+  onConfirmPasswordChange: (value: string) => void;
+  onValidateAndUpdate: () => Promise<boolean>;
 }
 
 const NotesDialogs = ({
@@ -53,6 +65,17 @@ const NotesDialogs = ({
   onSaveGlobalPassword,
   isUpdatePassword,
   setIsUpdatePassword,
+  // New props for password update
+  passwordUpdateDialog,
+  setPasswordUpdateDialog,
+  currentPassword,
+  newPassword,
+  confirmPassword,
+  passwordMismatch,
+  onCurrentPasswordChange,
+  onNewPasswordChange,
+  onConfirmPasswordChange,
+  onValidateAndUpdate,
 }: NotesDialogsProps) => {
   return (
     <>
@@ -90,6 +113,19 @@ const NotesDialogs = ({
         password={password}
         onPasswordChange={onPasswordChange}
         isUpdate={isUpdatePassword}
+      />
+
+      <GlobalPasswordUpdateDialog
+        open={passwordUpdateDialog}
+        onOpenChange={setPasswordUpdateDialog}
+        onValidateAndUpdate={onValidateAndUpdate}
+        currentPassword={currentPassword}
+        newPassword={newPassword}
+        confirmPassword={confirmPassword}
+        passwordMismatch={passwordMismatch}
+        onCurrentPasswordChange={onCurrentPasswordChange}
+        onNewPasswordChange={onNewPasswordChange}
+        onConfirmPasswordChange={onConfirmPasswordChange}
       />
     </>
   );

@@ -6,6 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 export const useNotePassword = () => {
   const [password, setPassword] = useState("");
   const [notePassword, setNotePassword] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
   const { toast } = useToast();
 
   const validatePassword = async (): Promise<boolean> => {
@@ -89,6 +93,78 @@ export const useNotePassword = () => {
     }
   };
 
+  const validateAndUpdateGlobalPassword = async (): Promise<boolean> => {
+    if (newPassword !== confirmPassword) {
+      setPasswordMismatch(true);
+      return false;
+    } 
+    
+    setPasswordMismatch(false);
+    
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Você precisa estar logado para atualizar a senha global."
+        });
+        return false;
+      }
+
+      // First, validate current password
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('note_password')
+        .eq('id', user.user.id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.note_password !== currentPassword) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Senha atual incorreta."
+        });
+        return false;
+      }
+
+      // If current password is valid, update to new password
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ note_password: newPassword })
+        .eq('id', user.user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setNotePassword(newPassword);
+      toast({
+        title: "Sucesso",
+        description: "Senha global atualizada com sucesso!"
+      });
+      
+      // Clear password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating global password:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar a senha global."
+      });
+      return false;
+    }
+  };
+
   return {
     password,
     setPassword,
@@ -96,5 +172,14 @@ export const useNotePassword = () => {
     setNotePassword,
     validatePassword,
     saveGlobalPassword,
+    // New password update fields
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    passwordMismatch,
+    validateAndUpdateGlobalPassword,
   };
 };

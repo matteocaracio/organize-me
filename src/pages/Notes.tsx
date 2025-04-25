@@ -17,6 +17,7 @@ const Notes = () => {
   const [viewDialog, setViewDialog] = useState(false);
   const [passwordDialog, setPasswordDialog] = useState(false);
   const [globalPasswordDialog, setGlobalPasswordDialog] = useState(false);
+  const [passwordUpdateDialog, setPasswordUpdateDialog] = useState(false);
   const [isUpdatePassword, setIsUpdatePassword] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -33,7 +34,15 @@ const Notes = () => {
     setPassword,
     notePassword,
     validatePassword,
-    saveGlobalPassword
+    saveGlobalPassword,
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    passwordMismatch,
+    validateAndUpdateGlobalPassword
   } = useNotePassword();
 
   const {
@@ -70,7 +79,7 @@ const Notes = () => {
     };
 
     checkGlobalPassword();
-  }, [globalPasswordDialog]);
+  }, [globalPasswordDialog, passwordUpdateDialog]);
 
   useEffect(() => {
     fetchNotes(showDeleted);
@@ -126,8 +135,7 @@ const Notes = () => {
           hasGlobalPassword={hasGlobalPassword}
           onNewNote={() => setNewNoteDialog(true)}
           onChangePassword={() => {
-            setIsUpdatePassword(true);
-            setGlobalPasswordDialog(true);
+            setPasswordUpdateDialog(true);
           }}
           onConfigurePassword={() => setGlobalPasswordDialog(true)}
         />
@@ -183,9 +191,20 @@ const Notes = () => {
           onPasswordChange={setPassword}
           globalPasswordDialog={globalPasswordDialog}
           setGlobalPasswordDialog={setGlobalPasswordDialog}
-          onSaveGlobalPassword={saveGlobalPassword} // This already returns Promise<boolean> from useNotePassword hook
+          onSaveGlobalPassword={saveGlobalPassword}
           isUpdatePassword={isUpdatePassword}
           setIsUpdatePassword={setIsUpdatePassword}
+          // New props for password update
+          passwordUpdateDialog={passwordUpdateDialog}
+          setPasswordUpdateDialog={setPasswordUpdateDialog}
+          currentPassword={currentPassword}
+          newPassword={newPassword}
+          confirmPassword={confirmPassword}
+          passwordMismatch={passwordMismatch}
+          onCurrentPasswordChange={setCurrentPassword}
+          onNewPasswordChange={setNewPassword}
+          onConfirmPasswordChange={setConfirmPassword}
+          onValidateAndUpdate={validateAndUpdateGlobalPassword}
         />
       </div>
     </NotesProvider>

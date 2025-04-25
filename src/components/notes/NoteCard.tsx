@@ -22,6 +22,15 @@ interface NoteCardProps {
 const NoteCard = ({ note, onDelete, onEdit, onTogglePin, onViewNote }: NoteCardProps) => {
   const [expanded, setExpanded] = useState(false);
 
+  const handleExpandToggle = () => {
+    // If the note is protected, we need to view it to validate the password first
+    if (note.isProtected && !expanded) {
+      onViewNote(note.id); // This will trigger the password dialog
+    } else {
+      setExpanded(!expanded);
+    }
+  };
+
   return (
     <Card className="card-hover">
       <CardContent className="p-4 pt-6 relative">
@@ -72,7 +81,7 @@ const NoteCard = ({ note, onDelete, onEdit, onTogglePin, onViewNote }: NoteCardP
           variant="ghost" 
           size="sm" 
           className="h-8 px-2 text-xs"
-          onClick={() => setExpanded(!expanded)}
+          onClick={handleExpandToggle}
         >
           {expanded ? "Ocultar" : "Expandir"}
         </Button>
