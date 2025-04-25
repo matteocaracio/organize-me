@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import MobileNav from "./MobileNav";
 import ThemeToggle from "./ThemeToggle";
 import { BrandIcon } from "@/components/ui/icons";
+import SettingsButton from "./SettingsButton";
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,7 +17,10 @@ const Layout = ({ children }: LayoutProps) => {
           <BrandIcon className="text-primary" />
           <h1 className="text-xl font-bold text-primary">Organize.me</h1>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <SettingsButton />
+          <ThemeToggle />
+        </div>
       </header>
       <main className="container mx-auto p-4">{children}</main>
       <MobileNav />
