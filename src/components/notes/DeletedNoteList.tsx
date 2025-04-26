@@ -1,6 +1,6 @@
 
 import React from "react";
-import { AlertCircle, Trash2 } from "lucide-react";
+import { AlertCircle, Trash2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import type { Note } from "./types";
@@ -38,11 +38,20 @@ const DeletedNoteList = ({
           notes.map((note) => (
             <Card key={note.id} className="card-hover opacity-70">
               <CardContent className="p-4 pt-6">
-                <h3 className="font-semibold text-lg truncate">{note.title}</h3>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-semibold text-lg truncate">{note.title}</h3>
+                  {note.isProtected && <Lock className="h-4 w-4 text-muted-foreground" />}
+                </div>
                 <div className="h-24 overflow-hidden">
-                  <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
-                    {note.content}
-                  </p>
+                  {note.isProtected ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      Esta nota está protegida por senha.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
+                      {note.content}
+                    </p>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="px-4 py-2 text-xs text-muted-foreground border-t flex justify-between">
@@ -77,3 +86,4 @@ const DeletedNoteList = ({
 };
 
 export default DeletedNoteList;
+
