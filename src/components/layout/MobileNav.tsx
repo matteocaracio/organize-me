@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, FileText, ListTodo, FlashcardIcon, Timer, Wallet } from "lucide-react";
+import { Home, FileText, ListTodo, Cards, Timer, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MobileNav = () => {
@@ -54,7 +54,7 @@ const MobileNav = () => {
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        <FlashcardIcon className="h-5 w-5 mb-1" />
+        <Cards className="h-5 w-5 mb-1" />
         <span>Flashcards</span>
       </Link>
       <Link
