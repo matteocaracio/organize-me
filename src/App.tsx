@@ -13,6 +13,7 @@ import Tasks from "./pages/Tasks";
 import Notes from "./pages/Notes";
 import Flashcards from "./pages/Flashcards";
 import Timer from "./pages/Timer";
+import Finance from "./pages/Finance";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -103,6 +104,29 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Timer />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/finance"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Finance />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/:section"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <div className="p-8">
+                    <h1 className="text-3xl font-bold mb-4">Configurações</h1>
+                    <p className="text-muted-foreground">Página em desenvolvimento.</p>
+                  </div>
                 </Layout>
               </ProtectedRoute>
             }
