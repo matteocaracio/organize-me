@@ -3,6 +3,7 @@ import { Task } from "./types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TaskCard from "./TaskCard";
 import EmptyState from "./EmptyState";
+import { useTaskSorting } from "@/hooks/tasks/useTaskSorting";
 
 interface TaskListViewProps {
   pendingTasks: Task[];
@@ -17,6 +18,9 @@ const TaskListView = ({
   onComplete,
   onDelete,
 }: TaskListViewProps) => {
+  const { sortTasksByPriorityAndDueDate } = useTaskSorting();
+  const sortedPendingTasks = sortTasksByPriorityAndDueDate(pendingTasks);
+
   return (
     <Tabs defaultValue="pendentes">
       <TabsList className="w-full">
@@ -32,7 +36,7 @@ const TaskListView = ({
         {pendingTasks.length === 0 ? (
           <EmptyState type="pending" />
         ) : (
-          pendingTasks.map((task) => (
+          sortedPendingTasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}

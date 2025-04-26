@@ -85,10 +85,7 @@ const TaskCard = ({ task, onComplete, onDelete }: TaskCardProps) => {
                 <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
                   <span>
-                    {task.due_date.toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {task.due_date.toLocaleDateString("pt-BR")}
                   </span>
                 </div>
               )}

@@ -5,6 +5,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Task } from "./types";
 import TaskCard from "./TaskCard";
 import { Card } from "@/components/ui/card";
+import { useTaskSorting } from "@/hooks/tasks/useTaskSorting";
 
 interface TaskCalendarViewProps {
   tasks: Task[];
@@ -14,12 +15,18 @@ interface TaskCalendarViewProps {
 
 const TaskCalendarView = ({ tasks, onComplete, onDelete }: TaskCalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { sortTasksByPriorityAndDueDate } = useTaskSorting();
 
-  // Filter tasks for the selected date
-  const tasksForSelectedDate = tasks.filter((task) => {
-    if (!task.due_date || !selectedDate) return false;
-    return format(task.due_date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
-  });
+  // Filter pending tasks for the selected date and sort by priority
+  const tasksForSelectedDate = sortTasksByPriorityAndDueDate(
+    tasks.filter((task) => {
+      if (!task.due_date || !selectedDate || task.status === "completed") return false;
+      return format(task.due_date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
+    })
+  );
+
+  // Get only pending tasks for calendar highlighting
+  const pendingTasks = tasks.filter(task => task.status === "pending");
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -29,10 +36,9 @@ const TaskCalendarView = ({ tasks, onComplete, onDelete }: TaskCalendarViewProps
           selected={selectedDate}
           onSelect={(date) => setSelectedDate(date || new Date())}
           className="rounded-md"
-          // Highlight dates that have tasks
           modifiers={{
             highlighted: (date) =>
-              tasks.some(
+              pendingTasks.some(
                 (task) =>
                   task.due_date &&
                   format(task.due_date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
@@ -49,7 +55,7 @@ const TaskCalendarView = ({ tasks, onComplete, onDelete }: TaskCalendarViewProps
           Tarefas para {format(selectedDate, "dd/MM/yyyy")}
         </h3>
         {tasksForSelectedDate.length === 0 ? (
-          <p className="text-muted-foreground">Nenhuma tarefa para esta data.</p>
+          <p className="text-muted-foreground">Nenhuma tarefa pendente para esta data.</p>
         ) : (
           tasksForSelectedDate.map((task) => (
             <TaskCard
