@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckSquare, FileText, Layers, Timer } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Task, Priority } from "@/components/tasks/types";
+import { Task, Priority, TaskStatus } from "@/components/tasks/types";
 import { Note } from "@/components/notes/types";
 import { compareAsc } from "date-fns";
 
@@ -48,7 +49,7 @@ const Dashboard = () => {
               title: task.title,
               notes: task.notes || "",
               priority: (task.priority || "medium") as Priority,
-              status: task.is_completed ? "completed" : "pending",
+              status: task.is_completed ? "completed" : "pending" as TaskStatus,
               due_date: task.due_date ? new Date(task.due_date) : undefined
             }))
             .sort((a, b) => {
