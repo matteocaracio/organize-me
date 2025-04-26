@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckSquare, FileText, Layers, Timer } from "lucide-react";
@@ -6,6 +5,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, Priority } from "@/components/tasks/types";
 import { Note } from "@/components/notes/types";
+import { compareAsc } from "date-fns";
 
 const Dashboard = () => {
   const [highPriorityTasks, setHighPriorityTasks] = useState(0);
@@ -30,25 +30,34 @@ const Dashboard = () => {
         
         setHighPriorityTasks(tasksData?.length || 0);
 
-        // Buscar tarefas para o foco do dia (3 tarefas prioritárias)
+        
+        // Buscar tarefas próximas do prazo (não concluídas e ordenadas por data)
         const { data: focusTasksData } = await supabase
           .from('tasks')
           .select('*')
           .eq('user_id', userData.user.id)
           .eq('is_completed', false)
-          .order('priority', { ascending: false })
-          .order('created_at', { ascending: false })
+          .not('due_date', 'is', null)
+          .order('due_date', { ascending: true })
           .limit(3);
 
         if (focusTasksData) {
-          const formattedTasks: Task[] = focusTasksData.map(task => ({
-            id: task.id,
-            title: task.title,
-            notes: task.notes || "",
-            priority: (task.priority || "medium") as Priority,
-            status: task.is_completed ? "completed" : "pending",
-            due_date: task.due_date ? new Date(task.due_date) : undefined
-          }));
+          const formattedTasks: Task[] = focusTasksData
+            .map(task => ({
+              id: task.id,
+              title: task.title,
+              notes: task.notes || "",
+              priority: (task.priority || "medium") as Priority,
+              status: task.is_completed ? "completed" : "pending",
+              due_date: task.due_date ? new Date(task.due_date) : undefined
+            }))
+            .sort((a, b) => {
+              if (a.due_date && b.due_date) {
+                return compareAsc(a.due_date, b.due_date);
+              }
+              return 0;
+            });
+          
           setFocusTasks(formattedTasks);
         }
 
@@ -149,12 +158,12 @@ const Dashboard = () => {
       <Card className="border-t-4 border-t-primary">
         <CardHeader>
           <CardTitle>Foco do dia</CardTitle>
-          <CardDescription>Tarefas e atividades prioritárias para hoje</CardDescription>
+          <CardDescription>Tarefas com prazo mais próximo</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {focusTasks.length === 0 ? (
             <div className="text-center text-muted-foreground py-4">
-              Não há tarefas prioritárias para hoje
+              Não há tarefas com prazo definido
             </div>
           ) : (
             focusTasks.map((task) => (
@@ -172,7 +181,7 @@ const Dashboard = () => {
                   </div>
                   {task.due_date && (
                     <span className="text-xs text-muted-foreground">
-                      {task.due_date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      {task.due_date.toLocaleDateString('pt-BR')}
                     </span>
                   )}
                 </div>
