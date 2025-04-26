@@ -1,31 +1,21 @@
 
 import { Task } from "@/components/tasks/types";
-import { compareAsc } from "date-fns";
+import { sortByPriority, sortByDueDate } from "@/utils/sortingUtils";
 
 export const useTaskSorting = () => {
   const sortTasksByPriorityAndDueDate = (tasks: Task[]) => {
     return [...tasks].sort((a, b) => {
-      // Primeiro, ordenar por prioridade
-      const priorityOrder = { high: 0, medium: 1, low: 2 };
-      const priorityA = priorityOrder[a.priority] || 1;
-      const priorityB = priorityOrder[b.priority] || 1;
-      
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
+      // First sort by priority
+      const priorityComparison = sortByPriority(a, b);
+      if (priorityComparison !== 0) {
+        return priorityComparison;
       }
       
-      // Se a prioridade for igual, ordenar por data de vencimento
-      if (a.due_date && b.due_date) {
-        return compareAsc(a.due_date, b.due_date);
-      }
-      
-      // Colocar tarefas sem data no final
-      if (a.due_date) return -1;
-      if (b.due_date) return 1;
-      
-      return 0;
+      // If priority is equal, sort by due date
+      return sortByDueDate(a, b);
     });
   };
 
   return { sortTasksByPriorityAndDueDate };
 };
+
