@@ -10,11 +10,11 @@ export const useTasks = () => {
   const [loading, setLoading] = useState(true);
   const { tasks, setTasks, addTask } = useTaskOperations();
   const { completeTask, deleteTask } = useTaskStatusOperations(tasks, setTasks);
-  const { sortTasksByPriority } = useTaskSorting();
+  const { sortTasksByPriorityAndDueDate } = useTaskSorting();
 
   useTaskFetching(setTasks, setLoading, deleteTask);
 
-  const pendingTasks = sortTasksByPriority(tasks.filter((task) => task.status === "pending"));
+  const pendingTasks = sortTasksByPriorityAndDueDate(tasks.filter((task) => task.status === "pending"));
   const completedTasks = tasks.filter((task) => task.status === "completed");
 
   return {
@@ -25,6 +25,6 @@ export const useTasks = () => {
     addTask,
     completeTask,
     deleteTask,
-    sortTasksByPriority
+    sortTasksByPriorityAndDueDate
   };
 };

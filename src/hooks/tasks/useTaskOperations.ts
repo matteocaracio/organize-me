@@ -8,7 +8,7 @@ import { useTaskSorting } from "./useTaskSorting";
 export const useTaskOperations = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const { toast } = useToast();
-  const { sortTasksByPriority } = useTaskSorting();
+  const { sortTasksByPriorityAndDueDate } = useTaskSorting();
 
   const addTask = async (newTask: NewTaskFormData) => {
     if (newTask.title.trim() === "") return;
@@ -55,9 +55,9 @@ export const useTaskOperations = () => {
           if (existingTaskIndex >= 0) {
             const updatedTasks = [...prevTasks];
             updatedTasks[existingTaskIndex] = task;
-            return sortTasksByPriority(updatedTasks);
+            return sortTasksByPriorityAndDueDate(updatedTasks);
           } else {
-            return sortTasksByPriority([task, ...prevTasks]);
+            return sortTasksByPriorityAndDueDate([task, ...prevTasks]);
           }
         });
 
