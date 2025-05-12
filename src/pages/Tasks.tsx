@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks } from "@/hooks/tasks/useTasks";
 import { NewTaskFormData } from "@/components/tasks/types";
 import NewTaskDialog from "@/components/tasks/NewTaskDialog";
 import TaskListView from "@/components/tasks/TaskListView";
@@ -24,7 +23,7 @@ const Tasks = () => {
     addTask,
     completeTask,
     deleteTask,
-    sortTasksByPriority
+    sortTasksByPriorityAndDueDate
   } = useTasks();
 
   const handleNewTaskChange = (task: NewTaskFormData) => {
@@ -62,7 +61,7 @@ const Tasks = () => {
         <div className="text-center py-8">Carregando tarefas...</div>
       ) : currentView === "calendar" ? (
         <TaskCalendarView
-          tasks={sortTasksByPriority([...pendingTasks, ...completedTasks])}
+          tasks={sortTasksByPriorityAndDueDate([...pendingTasks, ...completedTasks])}
           onComplete={completeTask}
           onDelete={deleteTask}
         />
