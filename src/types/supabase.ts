@@ -56,3 +56,26 @@ export interface ProfileRow {
   created_at: string | null;
   updated_at: string | null;
 }
+
+// Add mock database type with the profiles table
+export type Database = {
+  public: {
+    Tables: {
+      notes: {
+        Row: NoteRow;
+      };
+      tasks: {
+        Row: TaskRow;
+      };
+      flashcard_decks: {
+        Row: FlashcardDeckRow;
+      };
+      flashcards: {
+        Row: FlashcardRow;
+      };
+      profiles: {
+        Row: ProfileRow;
+      };
+    };
+  };
+};
