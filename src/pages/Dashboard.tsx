@@ -99,9 +99,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{highPriorityTasks}</div>
-              <p className="text-xs text-muted-foreground">
-                Tarefas de alta prioridade hoje
-              </p>
+              <p className="text-xs text-muted-foreground">Tarefas de alta prioridade em aberto</p>
             </CardContent>
           </Card>
         </Link>
