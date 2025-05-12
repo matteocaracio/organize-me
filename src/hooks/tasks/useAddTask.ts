@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Task, NewTaskFormData, Priority } from "@/components/tasks/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaskSorting } from "./useTaskSorting";
+import type { TaskRow } from "@/types/supabase";
 
 // Updated type definition here to support both direct array assignment and callback pattern
 export const useAddTask = (tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>) => {
@@ -40,13 +41,14 @@ export const useAddTask = (tasks: Task[], setTasks: React.Dispatch<React.SetStat
       if (error) throw error;
 
       if (data) {
+        const taskRow = data as TaskRow;
         const task: Task = {
-          id: data.id,
-          title: data.title,
-          notes: data.notes || "",
-          priority: (data.priority || "medium") as Priority,
+          id: taskRow.id,
+          title: taskRow.title,
+          notes: taskRow.notes || "",
+          priority: (taskRow.priority || "medium") as Priority,
           status: "pending",
-          due_date: data.due_date ? new Date(data.due_date) : undefined
+          due_date: taskRow.due_date ? new Date(taskRow.due_date) : undefined
         };
 
         setTasks(prevTasks => {

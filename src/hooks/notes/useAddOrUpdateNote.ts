@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Note } from "@/components/notes/types";
+import type { NoteRow } from "@/types/supabase";
 
 export const useAddOrUpdateNote = (notes: Note[], setNotes: (notes: Note[]) => void) => {
   const { toast } = useToast();
@@ -52,14 +53,15 @@ export const useAddOrUpdateNote = (notes: Note[], setNotes: (notes: Note[]) => v
       if (response.error) throw response.error;
 
       if (response.data) {
+        const noteRow = response.data as NoteRow;
         const note: Note = {
-          id: response.data.id,
-          title: response.data.title,
-          content: response.data.content || '',
-          date: new Date(response.data.updated_at),
-          isPinned: !!response.data.is_pinned,
-          isProtected: !!response.data.is_protected,
-          deletedAt: response.data.deleted ? new Date(response.data.deleted) : undefined,
+          id: noteRow.id,
+          title: noteRow.title,
+          content: noteRow.content || '',
+          date: new Date(noteRow.updated_at || ''),
+          isPinned: !!noteRow.is_pinned,
+          isProtected: !!noteRow.is_protected,
+          deletedAt: noteRow.deleted ? new Date(noteRow.deleted) : undefined,
         };
 
         if (selectedNote) {

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Note } from "@/components/notes/types";
+import type { NoteRow } from "@/types/supabase";
 
 export const useFetchNotes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -30,11 +31,11 @@ export const useFetchNotes = () => {
       if (error) throw error;
 
       if (data) {
-        const formattedNotes: Note[] = data.map(note => ({
+        const formattedNotes: Note[] = (data as NoteRow[]).map(note => ({
           id: note.id,
           title: note.title,
           content: note.content || '',
-          date: new Date(note.updated_at),
+          date: new Date(note.updated_at || ''),
           isPinned: !!note.is_pinned,
           isProtected: !!note.is_protected,
           deletedAt: note.deleted ? new Date(note.deleted) : undefined,
