@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { Task } from "@/components/tasks/types";
 import { useTaskOperations } from "./useTaskOperations";
 import { useTaskStatusOperations } from "./useTaskStatusOperations";
 import { useTaskFetching } from "./useTaskFetching";
