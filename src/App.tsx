@@ -11,7 +11,6 @@ import Layout from "./components/layout/Layout";
 import Index from "./pages/Index";
 import Tasks from "./pages/Tasks";
 import Notes from "./pages/Notes";
-import Flashcards from "./pages/Flashcards";
 import Timer from "./pages/Timer";
 import Finance from "./pages/Finance";
 import Auth from "./pages/Auth";
@@ -84,16 +83,6 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Notes />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/flashcards"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Flashcards />
                 </Layout>
               </ProtectedRoute>
             }

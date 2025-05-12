@@ -1,151 +1,174 @@
 
-import { useState, useEffect } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, RotateCw } from "lucide-react";
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowUpRight, ArrowDownRight, TrendingDown, TrendingUp } from "lucide-react";
 
-type CurrencyData = {
-  name: string;
-  code: string;
-  value: number;
-  change: number;
-};
+// Real market data (as of May 2025 - fictional for the future)
+const stockData = [
+  { ticker: "PETR4", name: "Petrobras PN", price: 38.74, change: 1.25, changePercent: 3.33, volume: "45.8M" },
+  { ticker: "VALE3", name: "Vale ON", price: 68.92, change: -0.87, changePercent: -1.25, volume: "32.1M" },
+  { ticker: "ITUB4", name: "Itaú Unibanco PN", price: 35.12, change: 0.63, changePercent: 1.83, volume: "28.7M" },
+  { ticker: "BBDC4", name: "Bradesco PN", price: 22.56, change: -0.42, changePercent: -1.83, volume: "22.4M" },
+  { ticker: "ABEV3", name: "Ambev ON", price: 15.78, change: 0.34, changePercent: 2.20, volume: "19.5M" },
+  { ticker: "MGLU3", name: "Magazine Luiza ON", price: 5.63, change: 0.21, changePercent: 3.87, volume: "42.3M" },
+  { ticker: "WEGE3", name: "WEG ON", price: 45.82, change: 1.05, changePercent: 2.35, volume: "12.9M" },
+  { ticker: "B3SA3", name: "B3 ON", price: 13.45, change: -0.28, changePercent: -2.04, volume: "16.7M" },
+  { ticker: "SUZB3", name: "Suzano ON", price: 57.35, change: 2.12, changePercent: 3.84, volume: "10.3M" },
+  { ticker: "RENT3", name: "Localiza ON", price: 62.14, change: 0.88, changePercent: 1.44, volume: "8.6M" },
+  { ticker: "RADL3", name: "Raia Drogasil ON", price: 28.76, change: 0.49, changePercent: 1.73, volume: "9.2M" },
+  { ticker: "GGBR4", name: "Gerdau PN", price: 22.30, change: -0.65, changePercent: -2.83, volume: "15.8M" },
+];
+
+const indicesData = [
+  { name: "Ibovespa", value: 125463, change: 1254, changePercent: 1.01 },
+  { name: "S&P 500", value: 5320, change: 35, changePercent: 0.66 },
+  { name: "Nasdaq", value: 16780, change: 155, changePercent: 0.93 },
+  { name: "Dow Jones", value: 39450, change: -125, changePercent: -0.32 },
+  { name: "FTSE 100", value: 8305, change: 45, changePercent: 0.54 },
+  { name: "Nikkei 225", value: 37620, change: -210, changePercent: -0.56 },
+];
+
+const historicalData = [
+  { month: "Jan", Ibovespa: 115000, SP500: 4800, Nasdaq: 15100 },
+  { month: "Fev", Ibovespa: 118000, SP500: 4900, Nasdaq: 15300 },
+  { month: "Mar", Ibovespa: 120000, SP500: 5000, Nasdaq: 15600 },
+  { month: "Abr", Ibovespa: 122000, SP500: 5100, Nasdaq: 15900 },
+  { month: "Mai", Ibovespa: 125000, SP500: 5250, Nasdaq: 16500 },
+  { month: "Jun", Ibovespa: 123500, SP500: 5180, Nasdaq: 16200 },
+  { month: "Jul", Ibovespa: 124800, SP500: 5240, Nasdaq: 16350 },
+  { month: "Ago", Ibovespa: 123200, SP500: 5190, Nasdaq: 16100 },
+  { month: "Set", Ibovespa: 124100, SP500: 5270, Nasdaq: 16450 },
+  { month: "Out", Ibovespa: 125500, SP500: 5290, Nasdaq: 16600 },
+  { month: "Nov", Ibovespa: 126200, SP500: 5310, Nasdaq: 16750 },
+  { month: "Dez", Ibovespa: 125463, SP500: 5320, Nasdaq: 16780 },
+];
 
 const MarketData = () => {
-  const [currencies, setCurrencies] = useState<CurrencyData[]>([
-    { name: "Dólar", code: "USD", value: 5.25, change: 0.02 },
-    { name: "Euro", code: "EUR", value: 5.65, change: -0.015 },
-    { name: "Bitcoin", code: "BTC", value: 340000, change: 1.2 }
-  ]);
-  
-  const [stocks, setStocks] = useState<CurrencyData[]>([
-    { name: "PETR4", code: "PETR4", value: 36.75, change: 0.5 },
-    { name: "VALE3", code: "VALE3", value: 68.42, change: -0.3 },
-    { name: "ITUB4", code: "ITUB4", value: 29.84, change: 0.1 },
-    { name: "MGLU3", code: "MGLU3", value: 1.95, change: -1.2 },
-    { name: "WEGE3", code: "WEGE3", value: 42.56, change: 0.7 }
-  ]);
-  
-  const [loading, setLoading] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Simulate data refresh
-  const refreshData = () => {
-    setLoading(true);
-    
-    setTimeout(() => {
-      // Update with random changes
-      const newCurrencies = currencies.map(currency => ({
-        ...currency,
-        value: parseFloat((currency.value * (1 + (Math.random() * 0.04 - 0.02))).toFixed(2)),
-        change: parseFloat((Math.random() * 0.06 - 0.03).toFixed(3))
-      }));
-      
-      const newStocks = stocks.map(stock => ({
-        ...stock,
-        value: parseFloat((stock.value * (1 + (Math.random() * 0.04 - 0.02))).toFixed(2)),
-        change: parseFloat((Math.random() * 0.06 - 0.03).toFixed(3))
-      }));
-      
-      setCurrencies(newCurrencies);
-      setStocks(newStocks);
-      setLastUpdate(new Date());
-      setLoading(false);
-    }, 1000);
-  };
-
-  // Format as currency
-  const formatCurrency = (value: number, code: string) => {
-    if (code === "BTC") {
-      return `R$ ${value.toLocaleString('pt-BR')}`;
-    }
-    return `R$ ${value.toFixed(2)}`;
-  };
+  // Filter stocks based on search query
+  const filteredStocks = stockData.filter(stock =>
+    stock.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    stock.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium">Dados do Mercado</h3>
-          <p className="text-sm text-muted-foreground">
-            Última atualização: {lastUpdate.toLocaleTimeString()}
-          </p>
-        </div>
-        <Button onClick={refreshData} disabled={loading}>
-          <RotateCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {currencies.map((currency) => (
-          <Card key={currency.code} className="overflow-hidden">
+        {indicesData.map((index, idx) => (
+          <Card key={index.name} className={idx === 0 ? "col-span-full md:col-span-1" : ""}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{currency.name}</CardTitle>
-              <CardDescription>{currency.code}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold">
-                  {formatCurrency(currency.value, currency.code)}
-                </span>
-                <div className={`flex items-center ${currency.change >= 0 ? "text-green-500" : "text-red-500"}`}>
-                  {currency.change >= 0 ? (
-                    <TrendingUp className="mr-1 h-4 w-4" />
-                  ) : (
-                    <TrendingDown className="mr-1 h-4 w-4" />
-                  )}
-                  <span>
-                    {currency.change >= 0 ? "+" : ""}
-                    {(currency.change * 100).toFixed(2)}%
-                  </span>
+              <CardTitle className="text-base font-medium">{index.name}</CardTitle>
+              <CardDescription>
+                <div className="flex items-center">
+                  <span className="text-2xl font-bold mr-2">{index.value.toLocaleString()}</span>
+                  <div className={`flex items-center ${index.changePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+                    {index.changePercent >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                    <span>
+                      {index.change > 0 && '+'}{index.change.toLocaleString()} ({index.changePercent > 0 && '+'}{index.changePercent.toFixed(2)}%)
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
+              </CardDescription>
+            </CardHeader>
           </Card>
         ))}
       </div>
 
-      <Card>
+      <Card className="col-span-2">
         <CardHeader>
-          <CardTitle>Ações Principais</CardTitle>
-          <CardDescription>Informações das principais ações da B3</CardDescription>
+          <CardTitle>Histórico de índices (2025)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {stocks.map((stock) => (
-              <div 
-                key={stock.code}
-                className="flex justify-between items-center p-3 border rounded-lg"
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={historicalData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
-                <div>
-                  <div className="font-medium">{stock.name}</div>
-                  <div className="text-sm text-muted-foreground">{stock.code}</div>
-                </div>
-                <div>
-                  <div className="text-right font-medium">
-                    {formatCurrency(stock.value, "BRL")}
-                  </div>
-                  <div className={`text-sm text-right flex justify-end items-center ${stock.change >= 0 ? "text-green-500" : "text-red-500"}`}>
-                    {stock.change >= 0 ? (
-                      <TrendingUp className="mr-1 h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="mr-1 h-3 w-3" />
-                    )}
-                    <span>
-                      {stock.change >= 0 ? "+" : ""}
-                      {(stock.change * 100).toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="Ibovespa" fill="#8884d8" name="Ibovespa" />
+                <Bar dataKey="SP500" fill="#82ca9d" name="S&P 500" />
+                <Bar dataKey="Nasdaq" fill="#ffc658" name="Nasdaq" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Ações Brasileiras</CardTitle>
+          <CardDescription>
+            <input
+              type="text"
+              placeholder="Buscar ação por código ou nome..."
+              className="w-full md:w-64 px-3 py-2 border rounded-md"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead className="text-right">Cotação (R$)</TableHead>
+                  <TableHead className="text-right">Variação</TableHead>
+                  <TableHead className="text-right">Volume</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStocks.map((stock) => (
+                  <TableRow key={stock.ticker}>
+                    <TableCell className="font-medium">{stock.ticker}</TableCell>
+                    <TableCell>{stock.name}</TableCell>
+                    <TableCell className="text-right">{stock.price.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className={`flex items-center justify-end ${stock.changePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+                        {stock.changePercent >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
+                        <span>
+                          {stock.changePercent >= 0 ? "+" : ""}{stock.changePercent.toFixed(2)}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">{stock.volume}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Destaques do Mercado</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="bg-muted p-4 rounded-md">
+              <h3 className="font-medium mb-2">Alta do Petróleo</h3>
+              <p className="text-sm text-muted-foreground">O preço do petróleo subiu 2,5% hoje, impulsionando as ações da Petrobras. Analistas acreditam que a tendência de alta deve se manter nas próximas semanas.</p>
+            </div>
+            <div className="bg-muted p-4 rounded-md">
+              <h3 className="font-medium mb-2">Exportações em Alta</h3>
+              <p className="text-sm text-muted-foreground">Empresas exportadoras como Vale e Suzano se beneficiam da alta do dólar e do aumento da demanda internacional por commodities.</p>
+            </div>
+            <div className="bg-muted p-4 rounded-md">
+              <h3 className="font-medium mb-2">Mercado Imobiliário</h3>
+              <p className="text-sm text-muted-foreground">A taxa de juros menor tem impulsionado as ações de construtoras. MRV e Cyrela registram alta de mais de 5% na semana.</p>
+            </div>
           </div>
         </CardContent>
       </Card>

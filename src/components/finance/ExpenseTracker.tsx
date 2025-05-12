@@ -17,7 +17,13 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Lightbulb } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Expense = {
   id: string;
@@ -25,6 +31,23 @@ type Expense = {
   amount: number;
   date: string;
   category: string;
+};
+
+const getSavingTips = (category: string): string => {
+  const tips = {
+    "Alimentação": "Compare preços em diferentes supermercados, compre itens da estação e planeje as refeições com antecedência.",
+    "Entretenimento": "Busque alternativas gratuitas como eventos comunitários ou utilize plataformas de streaming compartilhadas.",
+    "Moradia": "Verifique vazamentos, use lâmpadas LED e mantenha os aparelhos desligados quando não estiver usando.",
+    "Transporte": "Utilize transporte público, compartilhe caronas ou considere andar a pé/bicicleta para trajetos curtos.",
+    "Saúde": "Prefira medicamentos genéricos e faça check-ups regulares para prevenir problemas maiores.",
+    "Educação": "Procure por bolsas de estudo, cursos gratuitos online ou desconto para pagamento antecipado.",
+    "Roupas": "Espere por promoções sazonais e compre peças versáteis e de qualidade que durem mais.",
+    "Lazer": "Procure atividades gratuitas ou com desconto nos dias de semana.",
+    "Restaurantes": "Limitar refeições fora de casa a ocasiões especiais e preparar marmitas para o trabalho/escola.",
+    "Assinaturas": "Avalie todas as assinaturas mensais e cancele as que você não usa com frequência.",
+  };
+  
+  return tips[category as keyof typeof tips] || "Analise se este gasto é realmente necessário e procure alternativas mais econômicas.";
 };
 
 const ExpenseTracker = () => {
@@ -49,6 +72,20 @@ const ExpenseTracker = () => {
       amount: 120.35, 
       date: "2025-04-10", 
       category: "Moradia" 
+    },
+    { 
+      id: "4", 
+      description: "Combustível", 
+      amount: 200.00, 
+      date: "2025-04-05", 
+      category: "Transporte" 
+    },
+    { 
+      id: "5", 
+      description: "Farmácia", 
+      amount: 89.75, 
+      date: "2025-04-18", 
+      category: "Saúde" 
     }
   ]);
   
@@ -84,6 +121,12 @@ const ExpenseTracker = () => {
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
+  // Common expense categories for the dropdown
+  const categories = [
+    "Alimentação", "Entretenimento", "Moradia", "Transporte", "Saúde", 
+    "Educação", "Roupas", "Lazer", "Restaurantes", "Assinaturas", "Outros"
+  ];
+
   return (
     <div className="space-y-4">
       <Card>
@@ -110,11 +153,16 @@ const ExpenseTracker = () => {
               value={newExpense.date}
               onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
             />
-            <Input 
-              placeholder="Categoria"
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               value={newExpense.category}
               onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
-            />
+            >
+              <option value="">Selecione a categoria</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
             <Button onClick={handleAddExpense} className="w-full">
               <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
             </Button>
@@ -138,13 +186,14 @@ const ExpenseTracker = () => {
                   <TableHead>Categoria</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead className="text-right">Valor (R$)</TableHead>
+                  <TableHead className="text-center">Dicas</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {expenses.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">
+                    <TableCell colSpan={6} className="text-center">
                       Nenhuma despesa registrada
                     </TableCell>
                   </TableRow>
@@ -155,6 +204,18 @@ const ExpenseTracker = () => {
                       <TableCell>{expense.category}</TableCell>
                       <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">{expense.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-center">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Lightbulb className="h-4 w-4 text-yellow-500" />
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-sm">
+                              <p>{getSavingTips(expense.category)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"

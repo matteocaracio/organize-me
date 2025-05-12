@@ -1,5 +1,4 @@
 
-
 // This is a temporary development type file that mirrors the structure in src/integrations/supabase/types.ts
 // It's needed because we can't modify the read-only types.ts file directly
 
@@ -47,3 +46,13 @@ export interface FlashcardRow {
   updated_at: string | null;
 }
 
+export interface ProfileRow {
+  id: string;
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  note_password: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}

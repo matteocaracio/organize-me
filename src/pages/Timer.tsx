@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { 
   Play, Pause, RotateCcw, Volume2, Settings, 
@@ -24,6 +23,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Task } from "@/components/tasks/types";
+import { useToast } from "@/hooks/use-toast";
 
 // Tipos para o timer
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
@@ -54,6 +54,7 @@ const Timer = () => {
   const [volume, setVolume] = useState(50);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { toast } = useToast();
   
   // Refs
   const timerRef = useRef<number | null>(null);
@@ -96,15 +97,46 @@ const Timer = () => {
   
   // Efeito para inicializar o áudio
   useEffect(() => {
-    audioRef.current = new Audio("/audio/notification.mp3");
-    audioRef.current.volume = volume / 100;
+    // Check if audio is already created
+    if (!audioRef.current) {
+      // Create the audio element programmatically
+      const audio = new Audio();
+      audio.src = "/audio/notification.mp3";
+      audio.volume = volume / 100;
+      audio.preload = "auto";
+      
+      // Add event listeners for debugging
+      audio.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        toast({
+          variant: "destructive",
+          title: "Erro de áudio",
+          description: "Não foi possível carregar o som de notificação."
+        });
+      });
+      
+      audio.addEventListener('canplaythrough', () => {
+        console.log('Audio can play through');
+      });
+      
+      // Store in ref
+      audioRef.current = audio;
+    }
+    
+    // Test audio load
+    try {
+      audioRef.current.load();
+    } catch (e) {
+      console.error('Failed to load audio:', e);
+    }
     
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.src = '';
       }
     };
-  }, []);
+  }, [toast]);
   
   // Efeito para atualizar o volume
   useEffect(() => {
@@ -136,6 +168,40 @@ const Timer = () => {
     setIsActive(false);
   }, [mode, settings]);
   
+  // Test audio function
+  const testAudio = () => {
+    if (audioRef.current) {
+      // Reset audio to beginning
+      audioRef.current.currentTime = 0;
+      
+      // Play audio
+      const playPromise = audioRef.current.play();
+      
+      // Handle play promise
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Audio playing successfully');
+          })
+          .catch(error => {
+            console.error('Audio play failed:', error);
+            toast({
+              variant: "destructive", 
+              title: "Erro de reprodução",
+              description: "O navegador bloqueou a reprodução automática do áudio. Clique na tela e tente novamente."
+            });
+          });
+      }
+    } else {
+      console.error('Audio element not initialized');
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Elemento de áudio não inicializado."
+      });
+    }
+  };
+  
   // Função para iniciar ou pausar o timer
   const toggleTimer = () => {
     if (isActive) {
@@ -155,7 +221,27 @@ const Timer = () => {
             
             // Toca o som de notificação
             if (audioRef.current) {
-              audioRef.current.play();
+              // Reset audio to beginning
+              audioRef.current.currentTime = 0;
+              
+              // Play audio
+              const playPromise = audioRef.current.play();
+              
+              // Handle play promise
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    console.log('Audio playing successfully');
+                  })
+                  .catch(error => {
+                    console.error('Audio play failed:', error);
+                    toast({
+                      variant: "destructive", 
+                      title: "Erro de reprodução",
+                      description: "O navegador bloqueou a reprodução automática do áudio."
+                    });
+                  });
+              }
             }
             
             // Lógica para mudar para o próximo modo
@@ -294,6 +380,14 @@ const Timer = () => {
                       step={1}
                       onValueChange={(value) => setVolume(value[0])}
                     />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-2" 
+                      onClick={testAudio}
+                    >
+                      Testar
+                    </Button>
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>

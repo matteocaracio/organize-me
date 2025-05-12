@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, FileText, ListTodo, Grid, Timer, Wallet } from "lucide-react";
+import { Home, FileText, ListTodo, Timer, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MobileNav = () => {
@@ -44,18 +44,6 @@ const MobileNav = () => {
       >
         <FileText className="h-5 w-5 mb-1" />
         <span>Notas</span>
-      </Link>
-      <Link
-        to="/flashcards"
-        className={cn(
-          "flex flex-col items-center p-2 text-xs rounded-md transition-colors",
-          isActive("/flashcards")
-            ? "text-primary font-medium"
-            : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <Grid className="h-5 w-5 mb-1" />
-        <span>Flashcards</span>
       </Link>
       <Link
         to="/timer"
