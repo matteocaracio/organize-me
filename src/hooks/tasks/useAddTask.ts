@@ -5,7 +5,8 @@ import { Task, NewTaskFormData, Priority } from "@/components/tasks/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaskSorting } from "./useTaskSorting";
 
-export const useAddTask = (tasks: Task[], setTasks: (tasks: Task[]) => void) => {
+// Updated type definition here to support both direct array assignment and callback pattern
+export const useAddTask = (tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>) => {
   const { toast } = useToast();
   const { sortTasksByPriorityAndDueDate } = useTaskSorting();
 
