@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Deck, Flashcard } from "@/components/flashcards/types";
+import { FlashcardDeckRow, FlashcardRow } from "@/types/supabase";
 
 export const useFlashcards = () => {
   const { toast } = useToast();
@@ -36,7 +37,7 @@ export const useFlashcards = () => {
         return;
       }
       
-      const decksWithCards = await Promise.all(deckData.map(async (deck) => {
+      const decksWithCards = await Promise.all((deckData as FlashcardDeckRow[]).map(async (deck) => {
         const { data: cards, error: cardsError } = await supabase
           .from('flashcards')
           .select('*')
@@ -51,12 +52,12 @@ export const useFlashcards = () => {
           };
         }
         
-        const formattedCards = cards.map(card => ({
+        const formattedCards = (cards as FlashcardRow[]).map(card => ({
           id: card.id,
           question: card.question,
           answer: card.answer,
-          level: 0,
-          nextReview: new Date()
+          level: card.level || 0,
+          nextReview: card.next_review ? new Date(card.next_review) : new Date()
         }));
         
         return {
@@ -84,13 +85,6 @@ export const useFlashcards = () => {
 
   const deleteDeck = async (id: string) => {
     try {
-      const { error: flashcardError } = await supabase
-        .from('flashcards')
-        .delete()
-        .eq('deck_id', id);
-        
-      if (flashcardError) throw flashcardError;
-      
       const { error: deckError } = await supabase
         .from('flashcard_decks')
         .delete()
@@ -128,17 +122,19 @@ export const useFlashcards = () => {
         
       if (error) throw error;
       
+      const newCard: Flashcard = {
+        id: data.id,
+        question: data.question,
+        answer: data.answer,
+        level: data.level || 0,
+        nextReview: data.next_review ? new Date(data.next_review) : new Date()
+      };
+      
       setDecks(decks.map(deck => {
         if (deck.id === deckId) {
           return {
             ...deck,
-            cards: [...deck.cards, {
-              id: data.id,
-              question: data.question,
-              answer: data.answer,
-              level: 0,
-              nextReview: new Date()
-            }]
+            cards: [...deck.cards, newCard]
           };
         }
         return deck;
