@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { ptBR } from "date-fns/locale"; // Import the locale correctly
 import { Calendar } from "@/components/ui/calendar";
 import { Task } from "./types";
 import TaskCard from "./TaskCard";
@@ -113,7 +114,9 @@ const TaskCalendarView = ({ tasks, onComplete, onDelete }: TaskCalendarViewProps
           
           return (
             <div key={dateKey} className="space-y-4">
-              <h4 className="font-medium text-lg">{format(displayDate, "dd/MM/yyyy - EEEE", { locale: require('date-fns/locale/pt-BR') })}</h4>
+              <h4 className="font-medium text-lg">
+                {format(displayDate, "dd/MM/yyyy - EEEE", { locale: ptBR })}
+              </h4>
               {dayTasks.map(task => (
                 <TaskCard
                   key={task.id}
