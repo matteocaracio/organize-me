@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 export const useNotePassword = () => {
   const [password, setPassword] = useState("");
@@ -10,7 +10,41 @@ export const useNotePassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMismatch, setPasswordMismatch] = useState(false);
-  const { toast } = useToast();
+  const [hasGlobalPassword, setHasGlobalPassword] = useState(false);
+  
+  // Check if global password is set on component mount
+  useEffect(() => {
+    checkGlobalPassword();
+  }, []);
+  
+  const checkGlobalPassword = async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('note_password')
+        .eq('id', user.user.id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      const hasPassword = data && data.note_password !== null;
+      setHasGlobalPassword(hasPassword);
+      
+      if (hasPassword) {
+        // Use a placeholder to indicate a password exists without revealing it
+        setNotePassword("PASSWORD_EXISTS");
+      } else {
+        setNotePassword(null);
+      }
+    } catch (error) {
+      console.error('Error checking global password:', error);
+    }
+  };
 
   const validatePassword = async (): Promise<boolean> => {
     try {
@@ -28,7 +62,7 @@ export const useNotePassword = () => {
       }
 
       if (data && data.note_password === password) {
-        setNotePassword(password);
+        setNotePassword("PASSWORD_EXISTS");
         toast({
           title: "Sucesso",
           description: "Senha validada com sucesso!"
@@ -76,7 +110,8 @@ export const useNotePassword = () => {
         throw error;
       }
 
-      setNotePassword(password);
+      setNotePassword("PASSWORD_EXISTS");
+      setHasGlobalPassword(true);
       toast({
         title: "Sucesso",
         description: "Senha global salva com sucesso!"
@@ -142,7 +177,7 @@ export const useNotePassword = () => {
         throw updateError;
       }
 
-      setNotePassword(newPassword);
+      setNotePassword("PASSWORD_EXISTS");
       toast({
         title: "Sucesso",
         description: "Senha global atualizada com sucesso!"
@@ -181,5 +216,7 @@ export const useNotePassword = () => {
     setConfirmPassword,
     passwordMismatch,
     validateAndUpdateGlobalPassword,
+    hasGlobalPassword,
+    checkGlobalPassword,
   };
 };

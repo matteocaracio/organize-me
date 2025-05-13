@@ -15,6 +15,7 @@ import Timer from "./pages/Timer";
 import Finance from "./pages/Finance";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/settings/Settings";
 
 const queryClient = new QueryClient();
 
@@ -112,10 +113,7 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Layout>
-                  <div className="p-8">
-                    <h1 className="text-3xl font-bold mb-4">Configurações</h1>
-                    <p className="text-muted-foreground">Página em desenvolvimento.</p>
-                  </div>
+                  <Settings />
                 </Layout>
               </ProtectedRoute>
             }

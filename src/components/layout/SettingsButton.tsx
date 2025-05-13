@@ -1,5 +1,5 @@
 
-import { Settings, User, Mail, Key, LogOut } from "lucide-react";
+import { Settings, User, Mail, Key, LogOut, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -14,14 +14,22 @@ import { signOut } from "@/lib/auth";
 import { useState } from "react";
 import GlobalPasswordUpdateDialog from "../notes/GlobalPasswordUpdateDialog";
 import { toast } from "sonner";
+import { useNotePassword } from "@/hooks/useNotePassword";
 
 const SettingsButton = () => {
   const navigate = useNavigate();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordMismatch, setPasswordMismatch] = useState(false);
+  
+  const {
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    passwordMismatch,
+    validateAndUpdateGlobalPassword
+  } = useNotePassword();
 
   const handleSignOut = async () => {
     await signOut();
@@ -37,21 +45,11 @@ const SettingsButton = () => {
   };
 
   const handleValidateAndUpdatePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      setPasswordMismatch(true);
-      return false;
+    const success = await validateAndUpdateGlobalPassword();
+    if (success) {
+      setIsPasswordDialogOpen(false);
     }
-
-    setPasswordMismatch(false);
-    // Here you would typically validate the current password against the user's actual password
-    // and then update it if valid. For this demo, we'll just simulate success.
-    
-    toast.success("Senha atualizada com sucesso!");
-    setIsPasswordDialogOpen(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    return true;
+    return success;
   };
 
   return (
@@ -77,6 +75,10 @@ const SettingsButton = () => {
           <DropdownMenuItem onClick={() => handleSettings("password")}>
             <Key className="mr-2 h-4 w-4" />
             Alterar Senha
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSettings("notifications")}>
+            <Bell className="mr-2 h-4 w-4" />
+            Notificações
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut} className="text-destructive">

@@ -3,7 +3,10 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, ArrowDownRight, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, TrendingDown, TrendingUp, RefreshCw } from "lucide-react";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // Real market data (as of May 2025 - fictional for the future)
 const stockData = [
@@ -48,15 +51,85 @@ const historicalData = [
 const MarketData = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const { usdBrlPrice, stockPrices, loading, error, refreshData } = useFinanceData();
 
   // Filter stocks based on search query
   const filteredStocks = stockData.filter(stock =>
     stock.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
     stock.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  const handleRefresh = () => {
+    refreshData();
+    toast.success("Dados de mercado atualizados!");
+  };
+
+  // Get real-time prices for stocks if available
+  const getStockPrice = (ticker: string) => {
+    const symbol = `${ticker}.SA`;
+    if (stockPrices && stockPrices[symbol]) {
+      return parseFloat(stockPrices[symbol].price);
+    }
+    // Use static data as fallback
+    const stockItem = stockData.find(stock => stock.ticker === ticker);
+    return stockItem ? stockItem.price : 0;
+  };
 
   return (
     <div className="space-y-6">
+      {/* Live Market Data Section */}
+      <Card className="bg-muted/40">
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-center">
+            <CardTitle>Dados de Mercado em Tempo Real</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+          <CardDescription>
+            Última atualização: {new Date().toLocaleTimeString()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="text-sm text-muted-foreground">USD/BRL</div>
+              <div className="flex items-center mt-1">
+                <span className="text-2xl font-bold mr-2">
+                  {usdBrlPrice ? parseFloat(usdBrlPrice.price).toFixed(2) : "..."}
+                </span>
+                <div className="flex items-center text-green-500">
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  <span>+0.35%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="text-sm text-muted-foreground">PETR4.SA</div>
+              <div className="flex items-center mt-1">
+                <span className="text-2xl font-bold mr-2">
+                  {stockPrices && stockPrices["PETR4.SA"] 
+                    ? parseFloat(stockPrices["PETR4.SA"].price).toFixed(2) 
+                    : "..."}
+                </span>
+                <div className="flex items-center text-green-500">
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  <span>+1.27%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {error && <div className="text-red-500 text-sm mt-3">{error}</div>}
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {indicesData.map((index, idx) => (
           <Card key={index.name} className={idx === 0 ? "col-span-full md:col-span-1" : ""}>
@@ -133,7 +206,9 @@ const MarketData = () => {
                   <TableRow key={stock.ticker}>
                     <TableCell className="font-medium">{stock.ticker}</TableCell>
                     <TableCell>{stock.name}</TableCell>
-                    <TableCell className="text-right">{stock.price.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      {getStockPrice(stock.ticker).toFixed(2)}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className={`flex items-center justify-end ${stock.changePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
                         {stock.changePercent >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}

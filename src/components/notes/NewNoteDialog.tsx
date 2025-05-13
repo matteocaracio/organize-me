@@ -31,6 +31,9 @@ const NewNoteDialog = ({
   password = "",
   onPasswordChange
 }: NewNoteDialogProps) => {
+  // Flag to check if a global password exists (when password is "PASSWORD_EXISTS")
+  const hasGlobalPassword = password === "PASSWORD_EXISTS";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -68,7 +71,7 @@ const NewNoteDialog = ({
             <Label htmlFor="protected">Proteger com senha</Label>
           </div>
           
-          {newNote.isProtected && !password && (
+          {newNote.isProtected && !hasGlobalPassword && (
             <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-600 text-sm flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <div>
@@ -78,7 +81,7 @@ const NewNoteDialog = ({
             </div>
           )}
           
-          {newNote.isProtected && password && onPasswordChange && (
+          {newNote.isProtected && hasGlobalPassword && (
             <div className="space-y-2">
               <Label htmlFor="password">Senha Global</Label>
               <Input 
@@ -99,7 +102,7 @@ const NewNoteDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button 
             onClick={onSave}
-            disabled={newNote.isProtected && !password}
+            disabled={newNote.isProtected && !hasGlobalPassword}
           >
             Salvar
           </Button>
