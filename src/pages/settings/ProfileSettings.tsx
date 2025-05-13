@@ -56,7 +56,7 @@ const ProfileSettings = () => {
         .update({ 
           first_name: firstName,
           last_name: lastName,
-          updated_at: new Date()
+          updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
         })
         .eq('id', user.id);
       
