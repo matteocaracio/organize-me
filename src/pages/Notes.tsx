@@ -3,31 +3,37 @@ import React, { useState, useEffect } from "react";
 import { NotesProvider } from "@/components/notes/NotesContext";
 import NoteList from "@/components/notes/NoteList";
 import DeletedNoteList from "@/components/notes/DeletedNoteList";
-import type { Note } from "@/components/notes/types";
 import { useNotePassword } from "@/hooks/useNotePassword";
-import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 import { useNoteFilters } from "@/hooks/useNoteFilters";
 import { supabase } from "@/integrations/supabase/client";
 import NotesHeader from "@/components/notes/NotesHeader";
 import NotesToolbar from "@/components/notes/NotesToolbar";
 import NotesDialogs from "@/components/notes/NotesDialogs";
+import { useNoteDialogs } from "@/components/notes/hooks/useNoteDialogs";
+import { useNoteHandlers } from "@/hooks/notes/useNoteHandlers";
 
 const Notes = () => {
-  const [newNoteDialog, setNewNoteDialog] = useState(false);
-  const [viewDialog, setViewDialog] = useState(false);
-  const [passwordDialog, setPasswordDialog] = useState(false);
-  const [globalPasswordDialog, setGlobalPasswordDialog] = useState(false);
-  const [passwordUpdateDialog, setPasswordUpdateDialog] = useState(false);
-  const [isUpdatePassword, setIsUpdatePassword] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [hasGlobalPassword, setHasGlobalPassword] = useState<boolean | null>(null);
-  const [newNote, setNewNote] = useState({
-    title: "",
-    content: "",
-    isProtected: false,
-    password: ""
-  });
+  
+  const {
+    newNoteDialog,
+    setNewNoteDialog,
+    viewDialog,
+    setViewDialog,
+    passwordDialog,
+    setPasswordDialog,
+    globalPasswordDialog,
+    setGlobalPasswordDialog,
+    passwordUpdateDialog,
+    setPasswordUpdateDialog,
+    isUpdatePassword,
+    setIsUpdatePassword,
+    selectedNote,
+    setSelectedNote,
+    newNote,
+    setNewNote
+  } = useNoteDialogs();
 
   const {
     password,
@@ -42,28 +48,35 @@ const Notes = () => {
     confirmPassword,
     setConfirmPassword,
     passwordMismatch,
-    validateAndUpdateGlobalPassword
+    validateAndUpdateGlobalPassword,
+    checkGlobalPassword
   } = useNotePassword();
 
   const {
-    notes,
-    fetchNotes,
-    addOrUpdateNote,
+    handleViewNote,
+    handleEditNote,
+    handleSaveNote,
+    handlePasswordValidation,
     deleteNote,
     togglePin,
     restoreNote,
     permanentlyDeleteNote,
     clearTrash,
-  } = useNoteOperations();
+    fetchNotes
+  } = useNoteHandlers(
+    setNewNoteDialog,
+    setPasswordDialog,
+    setViewDialog,
+    selectedNote,
+    setSelectedNote,
+    newNote,
+    setNewNote
+  );
 
-  const {
-    searchTerm,
-    setSearchTerm,
-    filteredNotes,
-  } = useNoteFilters(notes);
+  const { searchTerm, setSearchTerm, filteredNotes } = useNoteFilters(notes);
 
   useEffect(() => {
-    const checkGlobalPassword = async () => {
+    const checkPassword = async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
@@ -75,58 +88,17 @@ const Notes = () => {
 
       if (!error) {
         setHasGlobalPassword(!!data?.note_password);
+        // Run the checkGlobalPassword function to update any state in the hook
+        await checkGlobalPassword();
       }
     };
 
-    checkGlobalPassword();
+    checkPassword();
   }, [globalPasswordDialog, passwordUpdateDialog]);
 
   useEffect(() => {
     fetchNotes(showDeleted);
   }, [showDeleted]);
-
-  const handleViewNote = async (id: string) => {
-    const noteToView = notes.find(note => note.id === id);
-    if (noteToView) {
-      setSelectedNote(noteToView);
-      if (noteToView.isProtected) {
-        setPasswordDialog(true);
-      } else {
-        setViewDialog(true);
-      }
-    }
-  };
-
-  const handleEditNote = async (id: string) => {
-    const noteToEdit = notes.find(note => note.id === id);
-    if (noteToEdit) {
-      setSelectedNote(noteToEdit);
-      setNewNote({
-        title: noteToEdit.title,
-        content: noteToEdit.content,
-        isProtected: noteToEdit.isProtected,
-        password: ""
-      });
-      setNewNoteDialog(true);
-    }
-  };
-
-  const handleSaveNote = async () => {
-    const savedNote = await addOrUpdateNote(newNote, selectedNote);
-    if (savedNote) {
-      setNewNoteDialog(false);
-      setNewNote({ title: "", content: "", isProtected: false, password: "" });
-      setSelectedNote(null);
-    }
-  };
-
-  const handlePasswordValidation = async () => {
-    const isValid = await validatePassword();
-    if (isValid) {
-      setPasswordDialog(false);
-      setViewDialog(true);
-    }
-  };
 
   return (
     <NotesProvider>
@@ -194,7 +166,6 @@ const Notes = () => {
           onSaveGlobalPassword={saveGlobalPassword}
           isUpdatePassword={isUpdatePassword}
           setIsUpdatePassword={setIsUpdatePassword}
-          // New props for password update
           passwordUpdateDialog={passwordUpdateDialog}
           setPasswordUpdateDialog={setPasswordUpdateDialog}
           currentPassword={currentPassword}
