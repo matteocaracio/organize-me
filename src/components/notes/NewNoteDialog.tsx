@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NewNoteDialogProps {
   open: boolean;
@@ -31,8 +32,45 @@ const NewNoteDialog = ({
   password = "",
   onPasswordChange
 }: NewNoteDialogProps) => {
-  // Flag to check if a global password exists (when password is "PASSWORD_EXISTS")
-  const hasGlobalPassword = password === "PASSWORD_EXISTS";
+  const [hasGlobalPassword, setHasGlobalPassword] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Check for global password on component mount and when dialog opens
+  useEffect(() => {
+    if (open) {
+      checkGlobalPassword();
+    }
+  }, [open]);
+
+  const checkGlobalPassword = async () => {
+    setLoading(true);
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        setHasGlobalPassword(false);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('note_password')
+        .eq('id', user.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error checking global password:', error);
+        setHasGlobalPassword(false);
+      } else {
+        setHasGlobalPassword(!!data?.note_password);
+      }
+    } catch (err) {
+      console.error('Error checking global password:', err);
+      setHasGlobalPassword(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,7 +109,14 @@ const NewNoteDialog = ({
             <Label htmlFor="protected">Proteger com senha</Label>
           </div>
           
-          {newNote.isProtected && !hasGlobalPassword && (
+          {/* Mostrar mensagem dependendo do estado do password global */}
+          {newNote.isProtected && loading && (
+            <div className="bg-gray-100 p-3 rounded-md text-gray-600 text-sm flex items-start">
+              <div className="animate-pulse">Verificando senha global...</div>
+            </div>
+          )}
+          
+          {newNote.isProtected && !loading && !hasGlobalPassword && (
             <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-600 text-sm flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <div>
@@ -81,7 +126,7 @@ const NewNoteDialog = ({
             </div>
           )}
           
-          {newNote.isProtected && hasGlobalPassword && (
+          {newNote.isProtected && !loading && hasGlobalPassword && (
             <div className="space-y-2">
               <Label htmlFor="password">Senha Global</Label>
               <Input 

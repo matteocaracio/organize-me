@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,6 +7,13 @@ import { ArrowUpRight, ArrowDownRight, TrendingDown, TrendingUp, RefreshCw } fro
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+// Tipos para os destaques do mercado
+interface MarketHighlight {
+  title: string;
+  description: string;
+  timestamp: Date;
+}
 
 // Real market data (as of May 2025 - fictional for the future)
 const stockData = [
@@ -33,6 +40,25 @@ const indicesData = [
   { name: "Nikkei 225", value: 37620, change: -210, changePercent: -0.56 },
 ];
 
+// Base de destaques do mercado
+const baseMarketHighlights: MarketHighlight[] = [
+  {
+    title: "Alta do Petróleo",
+    description: "O preço do petróleo subiu 2,5% hoje, impulsionando as ações da Petrobras. Analistas acreditam que a tendência de alta deve se manter nas próximas semanas.",
+    timestamp: new Date()
+  },
+  {
+    title: "Exportações em Alta",
+    description: "Empresas exportadoras como Vale e Suzano se beneficiam da alta do dólar e do aumento da demanda internacional por commodities.",
+    timestamp: new Date()
+  },
+  {
+    title: "Mercado Imobiliário",
+    description: "A taxa de juros menor tem impulsionado as ações de construtoras. MRV e Cyrela registram alta de mais de 5% na semana.",
+    timestamp: new Date()
+  }
+];
+
 const historicalData = [
   { month: "Jan", Ibovespa: 115000, SP500: 4800, Nasdaq: 15100 },
   { month: "Fev", Ibovespa: 118000, SP500: 4900, Nasdaq: 15300 },
@@ -48,9 +74,58 @@ const historicalData = [
   { month: "Dez", Ibovespa: 125463, SP500: 5320, Nasdaq: 16780 },
 ];
 
+// Função para gerar destaques aleatórios com base em dados atuais
+const generateMarketHighlights = (usdBrlPrice: any, stockPrices: any): MarketHighlight[] => {
+  const now = new Date();
+  const highlights: MarketHighlight[] = [];
+  
+  // Destacar dólar
+  if (usdBrlPrice) {
+    const usdPrice = parseFloat(usdBrlPrice.price);
+    highlights.push({
+      title: usdPrice > 5.2 ? "Dólar em Alta" : "Dólar Estável",
+      description: `Cotação atual do dólar é R$ ${usdPrice.toFixed(2)}. ${
+        usdPrice > 5.2 
+          ? "Exportadores se beneficiam, mas importações podem ficar mais caras."
+          : "Momento favorável para importações e viagens internacionais."
+      }`,
+      timestamp: now
+    });
+  }
+  
+  // Destacar alguma ação relevante
+  if (stockPrices && Object.keys(stockPrices).length > 0) {
+    const randomStock = Object.keys(stockPrices)[Math.floor(Math.random() * Object.keys(stockPrices).length)];
+    const stockInfo = stockData.find(stock => `${stock.ticker}.SA` === randomStock);
+    
+    if (stockInfo) {
+      highlights.push({
+        title: `Movimento em ${stockInfo.ticker}`,
+        description: `${stockInfo.name} ${stockInfo.changePercent > 0 ? "sobe" : "cai"} ${Math.abs(stockInfo.changePercent).toFixed(2)}%. ${
+          stockInfo.changePercent > 0 
+            ? "Analistas recomendam atenção à continuidade do movimento."
+            : "Investidores avaliam se é momento de entrada na ação."
+        }`,
+        timestamp: now
+      });
+    }
+  }
+  
+  // Adicionar um destaque genérico sobre o mercado
+  highlights.push({
+    title: "Perspectivas de Mercado",
+    description: "Analistas projetam um mercado volátil nas próximas semanas devido às expectativas de mudanças nas taxas de juros e indicadores econômicos.",
+    timestamp: now
+  });
+  
+  return highlights.length > 0 ? highlights : baseMarketHighlights;
+};
+
 const MarketData = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
+  const [marketHighlights, setMarketHighlights] = useState<MarketHighlight[]>(baseMarketHighlights);
   const { usdBrlPrice, stockPrices, loading, error, refreshData } = useFinanceData();
 
   // Filter stocks based on search query
@@ -58,6 +133,29 @@ const MarketData = () => {
     stock.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
     stock.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  // Efeito para atualizar os destaques do mercado
+  useEffect(() => {
+    if (usdBrlPrice || (stockPrices && Object.keys(stockPrices).length > 0)) {
+      const newHighlights = generateMarketHighlights(usdBrlPrice, stockPrices);
+      setMarketHighlights(newHighlights);
+      setLastUpdateTime(new Date());
+    }
+  }, [usdBrlPrice, stockPrices]);
+  
+  // Atualiza os dados a cada 15 minutos
+  useEffect(() => {
+    // Atualiza inicialmente
+    refreshData();
+    
+    // Configura intervalo de 15 minutos (900000 ms)
+    const interval = setInterval(() => {
+      refreshData();
+      toast.info("Dados de mercado atualizados automaticamente");
+    }, 15 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [refreshData]);
   
   const handleRefresh = () => {
     refreshData();
@@ -92,7 +190,7 @@ const MarketData = () => {
             </Button>
           </div>
           <CardDescription>
-            Última atualização: {new Date().toLocaleTimeString()}
+            Última atualização: {lastUpdateTime.toLocaleTimeString()}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,22 +326,21 @@ const MarketData = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Destaques do Mercado</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Destaques do Mercado</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              Atualizado: {lastUpdateTime.toLocaleTimeString()}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="bg-muted p-4 rounded-md">
-              <h3 className="font-medium mb-2">Alta do Petróleo</h3>
-              <p className="text-sm text-muted-foreground">O preço do petróleo subiu 2,5% hoje, impulsionando as ações da Petrobras. Analistas acreditam que a tendência de alta deve se manter nas próximas semanas.</p>
-            </div>
-            <div className="bg-muted p-4 rounded-md">
-              <h3 className="font-medium mb-2">Exportações em Alta</h3>
-              <p className="text-sm text-muted-foreground">Empresas exportadoras como Vale e Suzano se beneficiam da alta do dólar e do aumento da demanda internacional por commodities.</p>
-            </div>
-            <div className="bg-muted p-4 rounded-md">
-              <h3 className="font-medium mb-2">Mercado Imobiliário</h3>
-              <p className="text-sm text-muted-foreground">A taxa de juros menor tem impulsionado as ações de construtoras. MRV e Cyrela registram alta de mais de 5% na semana.</p>
-            </div>
+            {marketHighlights.map((highlight, index) => (
+              <div key={index} className="bg-muted p-4 rounded-md">
+                <h3 className="font-medium mb-2">{highlight.title}</h3>
+                <p className="text-sm text-muted-foreground">{highlight.description}</p>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

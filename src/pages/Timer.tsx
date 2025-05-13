@@ -23,7 +23,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Task } from "@/components/tasks/types";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 // Tipos para o timer
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
@@ -54,6 +54,7 @@ const Timer = () => {
   const [volume, setVolume] = useState(50);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [audioReady, setAudioReady] = useState(false);
   const { toast } = useToast();
   
   // Refs
@@ -117,6 +118,7 @@ const Timer = () => {
       
       audio.addEventListener('canplaythrough', () => {
         console.log('Audio can play through');
+        setAudioReady(true);
       });
       
       // Store in ref
@@ -168,38 +170,31 @@ const Timer = () => {
     setIsActive(false);
   }, [mode, settings]);
   
-  // Test audio function
-  const testAudio = () => {
-    if (audioRef.current) {
+  // Função para iniciar o som de notificação com interação do usuário
+  const playNotificationSound = () => {
+    if (audioRef.current && audioReady) {
       // Reset audio to beginning
       audioRef.current.currentTime = 0;
       
       // Play audio
-      const playPromise = audioRef.current.play();
-      
-      // Handle play promise
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log('Audio playing successfully');
-          })
-          .catch(error => {
-            console.error('Audio play failed:', error);
-            toast({
-              variant: "destructive", 
-              title: "Erro de reprodução",
-              description: "O navegador bloqueou a reprodução automática do áudio. Clique na tela e tente novamente."
-            });
+      audioRef.current.play()
+        .then(() => {
+          console.log('Audio playing successfully');
+        })
+        .catch(error => {
+          console.error('Audio play failed:', error);
+          toast({
+            variant: "destructive", 
+            title: "Erro de reprodução",
+            description: "O navegador bloqueou a reprodução do áudio."
           });
-      }
-    } else {
-      console.error('Audio element not initialized');
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Elemento de áudio não inicializado."
-      });
+        });
     }
+  };
+  
+  // Função para testar o áudio com interação do usuário
+  const testAudio = () => {
+    playNotificationSound();
   };
   
   // Função para iniciar ou pausar o timer
@@ -219,30 +214,8 @@ const Timer = () => {
             clearInterval(timerRef.current!);
             timerRef.current = null;
             
-            // Toca o som de notificação
-            if (audioRef.current) {
-              // Reset audio to beginning
-              audioRef.current.currentTime = 0;
-              
-              // Play audio
-              const playPromise = audioRef.current.play();
-              
-              // Handle play promise
-              if (playPromise !== undefined) {
-                playPromise
-                  .then(() => {
-                    console.log('Audio playing successfully');
-                  })
-                  .catch(error => {
-                    console.error('Audio play failed:', error);
-                    toast({
-                      variant: "destructive", 
-                      title: "Erro de reprodução",
-                      description: "O navegador bloqueou a reprodução automática do áudio."
-                    });
-                  });
-              }
-            }
+            // Toca o som de notificação se o áudio estiver pronto
+            playNotificationSound();
             
             // Lógica para mudar para o próximo modo
             if (mode === "pomodoro") {
@@ -329,9 +302,51 @@ const Timer = () => {
     return 100 - (timeLeft / totalTime) * 100;
   };
 
+  // Novo botão para iniciar o áudio explicitamente
+  const handleInitializeAudio = () => {
+    if (audioRef.current) {
+      // Tenta reproduzir e pausar imediatamente para ativar o áudio
+      audioRef.current.play()
+        .then(() => {
+          // Pausa imediatamente após conseguir reproduzir
+          audioRef.current?.pause();
+          audioRef.current!.currentTime = 0;
+          setAudioReady(true);
+          toast({
+            title: "Áudio inicializado",
+            description: "O som de notificação foi ativado com sucesso!"
+          });
+        })
+        .catch(error => {
+          console.error('Failed to initialize audio:', error);
+          toast({
+            variant: "destructive",
+            title: "Erro de inicialização",
+            description: "Não foi possível ativar o som. Tente novamente."
+          });
+        });
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center h-[calc(100vh-13rem)]">
       <div className="w-full max-w-md">
+        {!audioReady && (
+          <Card className="mb-6 bg-amber-50 border-amber-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-amber-700">
+                  <p className="font-medium">Ative o som do timer</p>
+                  <p className="text-sm">Clique no botão ao lado para permitir notificações sonoras</p>
+                </div>
+                <Button onClick={handleInitializeAudio}>
+                  Ativar Som
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         <Tabs 
           defaultValue="pomodoro" 
           value={mode}
