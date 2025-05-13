@@ -17,7 +17,7 @@ const Notes = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [hasGlobalPassword, setHasGlobalPassword] = useState<boolean | null>(null);
   
-  const { notes } = useNoteOperations();
+  const { notes, fetchNotes } = useNoteOperations();
   
   const {
     newNoteDialog,
@@ -64,8 +64,7 @@ const Notes = () => {
     togglePin,
     restoreNote,
     permanentlyDeleteNote,
-    clearTrash,
-    fetchNotes
+    clearTrash
   } = useNoteHandlers(
     setNewNoteDialog,
     setPasswordDialog,
@@ -100,8 +99,9 @@ const Notes = () => {
   }, [globalPasswordDialog, passwordUpdateDialog]);
 
   useEffect(() => {
+    // Fetch notes initially and when showDeleted changes
     fetchNotes(showDeleted);
-  }, [showDeleted]);
+  }, [showDeleted, fetchNotes]);
 
   return (
     <NotesProvider>

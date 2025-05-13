@@ -18,7 +18,7 @@ interface NewNoteDialogProps {
     isProtected: boolean;
   };
   onNewNoteChange: (note: { title: string; content: string; isProtected: boolean }) => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
   password?: string;
   onPasswordChange?: (password: string) => void;
 }
@@ -70,6 +70,13 @@ const NewNoteDialog = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = async () => {
+    if (!newNote.title.trim()) {
+      return;
+    }
+    await onSave();
   };
 
   return (
@@ -146,7 +153,7 @@ const NewNoteDialog = ({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button 
-            onClick={onSave}
+            onClick={handleSave}
             disabled={newNote.isProtected && !hasGlobalPassword}
           >
             Salvar

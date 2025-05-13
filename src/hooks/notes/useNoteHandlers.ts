@@ -61,6 +61,8 @@ export const useNoteHandlers = (
       setNewNoteDialog(false);
       setNewNote({ title: "", content: "", isProtected: false, password: "" });
       setSelectedNote(null);
+      // Atualiza a lista de notas após salvar
+      await fetchNotes();
     }
   };
 
