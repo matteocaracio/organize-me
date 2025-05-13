@@ -11,10 +11,13 @@ import NotesToolbar from "@/components/notes/NotesToolbar";
 import NotesDialogs from "@/components/notes/NotesDialogs";
 import { useNoteDialogs } from "@/components/notes/hooks/useNoteDialogs";
 import { useNoteHandlers } from "@/hooks/notes/useNoteHandlers";
+import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 
 const Notes = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [hasGlobalPassword, setHasGlobalPassword] = useState<boolean | null>(null);
+  
+  const { notes } = useNoteOperations();
   
   const {
     newNoteDialog,
