@@ -26,6 +26,9 @@ export default defineConfig(({ mode }) => ({
       transformMixedEsModules: true,
       include: [/node_modules/],
     },
+    rollupOptions: {
+      external: ['bcryptjs']
+    }
   },
   // Properly handle ESM vs CommonJS conflicts
   optimizeDeps: {
