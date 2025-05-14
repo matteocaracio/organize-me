@@ -67,13 +67,17 @@ const NoteCard = ({ note, onDelete, onEdit, onTogglePin, onViewNote }: NoteCardP
             </DropdownMenu>
           </div>
         </div>
-        {expanded && (
-          <div className="mt-4 overflow-hidden">
-            <p className="text-sm text-muted-foreground whitespace-pre-line">
+        <div className="h-24 overflow-hidden mt-2">
+          {note.isProtected ? (
+            <p className="text-sm text-muted-foreground italic">
+              Esta nota está protegida por senha.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
               {note.content}
             </p>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
       <CardFooter className="px-4 py-2 text-xs text-muted-foreground border-t flex justify-between items-center">
         <span>Atualizado em {note.date.toLocaleDateString('pt-BR')}</span>

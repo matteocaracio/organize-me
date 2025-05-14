@@ -1,13 +1,32 @@
 
-import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
+import { compare } from "bcryptjs";
 
-export const usePasswordValidation = (password: string, setNotePassword: (value: string | null) => void) => {
+export const usePasswordValidation = (
+  password: string,
+  setNotePassword: (value: string | null) => void
+) => {
   const validatePassword = async (): Promise<boolean> => {
     try {
+      if (!password.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Digite uma senha para continuar."
+        });
+        return false;
+      }
+      
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return false;
+      if (!user.user) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Você precisa estar logado para visualizar notas protegidas."
+        });
+        return false;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
@@ -19,21 +38,38 @@ export const usePasswordValidation = (password: string, setNotePassword: (value:
         throw error;
       }
 
-      if (data && data.note_password === password) {
-        setNotePassword("PASSWORD_EXISTS");
-        toast({
-          title: "Sucesso",
-          description: "Senha validada com sucesso!"
-        });
-        return true;
-      } else {
+      if (!data?.note_password) {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: "Senha incorreta."
+          description: "Não há senha global configurada. Configure uma senha nas opções de notas."
         });
         return false;
       }
+
+      // Simple check if stored passwords are not hashed
+      if (data.note_password === password) {
+        setNotePassword(password);
+        return true;
+      }
+
+      // For password comparison using bcryptjs (if passwords are hashed)
+      try {
+        const isValid = await compare(password, data.note_password);
+        if (isValid) {
+          setNotePassword(password);
+          return true;
+        }
+      } catch (err) {
+        console.error("Error comparing passwords:", err);
+      }
+
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Senha incorreta."
+      });
+      return false;
     } catch (error) {
       console.error('Error validating password:', error);
       toast({
@@ -45,5 +81,7 @@ export const usePasswordValidation = (password: string, setNotePassword: (value:
     }
   };
 
-  return { validatePassword };
+  return {
+    validatePassword,
+  };
 };

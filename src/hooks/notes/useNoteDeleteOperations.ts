@@ -71,7 +71,7 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
 
       if (error) throw error;
 
-      setNotes([]);
+      setNotes(notes.filter(note => !note.deletedAt));
 
       toast({
         title: "Sucesso",

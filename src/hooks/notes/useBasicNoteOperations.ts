@@ -52,7 +52,7 @@ export const useBasicNoteOperations = () => {
           deletedAt: note.deleted ? new Date(note.deleted) : undefined,
         }));
         
-        console.log("Notas carregadas:", formattedNotes.length);
+        console.log("Notas carregadas:", formattedNotes.length, "showDeleted:", showDeleted);
         setNotes(formattedNotes);
       }
     } catch (error) {

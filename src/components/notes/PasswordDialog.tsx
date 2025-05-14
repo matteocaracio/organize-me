@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,22 @@ const PasswordDialog = ({
   password,
   onPasswordChange,
 }: PasswordDialogProps) => {
+  
+  // Handle Enter key press to submit the form
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onValidate();
+    }
+  };
+  
+  // Clear password when dialog closes
+  useEffect(() => {
+    if (!open) {
+      onPasswordChange("");
+    }
+  }, [open, onPasswordChange]);
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -44,6 +60,8 @@ const PasswordDialog = ({
             placeholder="Digite a senha"
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            autoFocus
           />
         </div>
         <DialogFooter>
