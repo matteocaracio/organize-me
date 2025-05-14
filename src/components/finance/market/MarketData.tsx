@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { useFinanceData } from "@/hooks/useFinanceData";
@@ -58,7 +57,6 @@ const MarketData = () => {
   const handleRefresh = () => {
     refreshData();
     setLastUpdateTime(new Date());
-    toast.success("Dados de mercado atualizados!");
   };
 
   // Get real-time prices for stocks if available
