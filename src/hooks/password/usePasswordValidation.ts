@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { compare } from "bcryptjs";
+import * as bcrypt from "bcryptjs"; // Updated import style
 
 export const usePasswordValidation = (
   password: string,
@@ -55,7 +55,7 @@ export const usePasswordValidation = (
 
       // For password comparison using bcryptjs (if passwords are hashed)
       try {
-        const isValid = await compare(password, data.note_password);
+        const isValid = await bcrypt.compare(password, data.note_password);
         if (isValid) {
           setNotePassword(password);
           return true;
