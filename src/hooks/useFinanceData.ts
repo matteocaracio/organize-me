@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface Price {
   price: string;
@@ -9,7 +9,7 @@ interface Price {
 export const useFinanceData = () => {
   const [usdBrlPrice, setUsdBrlPrice] = useState<Price | null>(null);
   const [stockPrices, setStockPrices] = useState<Record<string, Price>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPrice = async (symbol: string): Promise<Price> => {
@@ -58,13 +58,6 @@ export const useFinanceData = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchData();
-    // Refresh data every 5 minutes
-    const interval = setInterval(fetchData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   return {
     usdBrlPrice,

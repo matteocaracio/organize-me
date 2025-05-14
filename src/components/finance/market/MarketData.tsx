@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { toast } from "sonner";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useMarketHighlights } from "@/hooks/finance/useMarketHighlights";
@@ -54,21 +55,6 @@ const MarketData = () => {
   const { usdBrlPrice, stockPrices, loading, error, refreshData } = useFinanceData();
   const { marketHighlights } = useMarketHighlights(usdBrlPrice, stockPrices, stockData);
 
-  // Atualiza os dados a cada 15 minutos
-  useEffect(() => {
-    // Atualiza inicialmente
-    refreshData();
-    
-    // Configura intervalo de 15 minutos (900000 ms)
-    const interval = setInterval(() => {
-      refreshData();
-      setLastUpdateTime(new Date());
-      toast.info("Dados de mercado atualizados automaticamente");
-    }, 15 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [refreshData]);
-  
   const handleRefresh = () => {
     refreshData();
     setLastUpdateTime(new Date());
