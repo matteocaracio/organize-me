@@ -1,5 +1,5 @@
 
-import Dashboard from "./Dashboard";
+import Dashboard from "@/pages/Dashboard";
 
 const Index = () => {
   return <Dashboard />;
