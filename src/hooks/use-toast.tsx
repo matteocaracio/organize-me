@@ -1,5 +1,5 @@
 
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, createContext, useContext } from 'react'
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
 
 type ToasterToast = ToastProps & {
@@ -63,14 +63,18 @@ export function useToast() {
   return {
     ...context,
     toast: (props: Omit<ToasterToast, "id">) => {
-      return context.addToast({ ...props, id: genId() })
+      // Create a complete ToasterToast object with an id before passing to addToast
+      const id = genId()
+      return context.addToast({ ...props, id })
     }
   }
 }
 
 export function toast(props: Omit<ToasterToast, "id">) {
   const { addToast } = useToast()
-  return addToast(props)
+  // Make sure we're adding the id before passing to addToast
+  const id = genId()
+  return addToast({ ...props, id })
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
