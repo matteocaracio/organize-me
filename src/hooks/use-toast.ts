@@ -53,9 +53,9 @@ export function useToast() {
     return {
       toasts: [],
       addToast,
-      updateToast: (id, data) => {},
-      dismissToast: (id) => {},
-      removeToast: (id) => {},
+      updateToast: (id: string, data: ToasterToast) => {},
+      dismissToast: (id: string) => {},
+      removeToast: (id: string) => {},
       toast: addToast
     }
   }
