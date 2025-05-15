@@ -43,7 +43,13 @@ const PasswordDialog = ({
   }, [open, onPasswordChange]);
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        onOpenChange(isOpen);
+        if (!isOpen) onPasswordChange("");
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Nota Protegida</DialogTitle>
@@ -60,7 +66,7 @@ const PasswordDialog = ({
             placeholder="Digite a senha"
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             autoFocus
           />
         </div>

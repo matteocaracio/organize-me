@@ -23,12 +23,8 @@ const NoteCard = ({ note, onDelete, onEdit, onTogglePin, onViewNote }: NoteCardP
   const [expanded, setExpanded] = useState(false);
 
   const handleExpandToggle = () => {
-    // If the note is protected, we need to view it to validate the password first
-    if (note.isProtected && !expanded) {
-      onViewNote(note.id); // This will trigger the password dialog
-    } else {
-      setExpanded(!expanded);
-    }
+    // Always trigger the view handler which will handle the password check
+    onViewNote(note.id);
   };
 
   return (
@@ -87,7 +83,7 @@ const NoteCard = ({ note, onDelete, onEdit, onTogglePin, onViewNote }: NoteCardP
           className="h-8 px-2 text-xs"
           onClick={handleExpandToggle}
         >
-          {expanded ? "Ocultar" : "Expandir"}
+          Expandir
         </Button>
       </CardFooter>
     </Card>

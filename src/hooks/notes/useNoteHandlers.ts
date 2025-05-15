@@ -1,7 +1,7 @@
-
 import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 import { useNotePassword } from "@/hooks/useNotePassword";
 import type { Note } from "@/components/notes/types";
+import { toast } from "@/hooks/use-toast";
 
 export const useNoteHandlers = (
   setNewNoteDialog: (value: boolean) => void,
@@ -33,11 +33,20 @@ export const useNoteHandlers = (
     const noteToView = notes.find(note => note.id === id);
     if (noteToView) {
       setSelectedNote(noteToView);
+      
+      // If the note is protected, show password dialog
       if (noteToView.isProtected) {
         setPasswordDialog(true);
       } else {
+        // Otherwise, show the note directly
         setViewDialog(true);
       }
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Nota não encontrada."
+      });
     }
   };
 
@@ -52,10 +61,25 @@ export const useNoteHandlers = (
         password: ""
       });
       setNewNoteDialog(true);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Nota não encontrada para edição."
+      });
     }
   };
 
   const handleSaveNote = async () => {
+    if (!newNote.title.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "O título da nota não pode estar vazio."
+      });
+      return;
+    }
+    
     const savedNote = await addOrUpdateNote(newNote, selectedNote);
     if (savedNote) {
       setNewNoteDialog(false);
