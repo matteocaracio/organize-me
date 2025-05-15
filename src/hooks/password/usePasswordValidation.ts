@@ -20,8 +20,14 @@ export const usePasswordValidation = (
         return false;
       }
       
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
+      // Get current user
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Erro ao obter sessão:", sessionError);
+        throw sessionError;
+      }
+      
+      if (!session.session?.user) {
         console.error("Nenhum usuário autenticado");
         toast({
           variant: "destructive",
@@ -30,18 +36,25 @@ export const usePasswordValidation = (
         });
         return false;
       }
-
-      console.log("Buscando senha global para o usuário:", user.user.id);
       
+      const userId = session.session.user.id;
+      console.log("Buscando senha global para o usuário:", userId);
+      
+      // Get the user's profile with note_password in a simpler query
       const { data, error } = await supabase
         .from('profiles')
         .select('note_password')
-        .eq('id', user.user.id)
+        .eq('id', userId)
         .single();
 
       if (error) {
         console.error("Erro ao buscar perfil:", error);
-        throw error;
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível verificar a senha. Tente novamente."
+        });
+        return false;
       }
 
       console.log("Perfil encontrado:", data ? "sim" : "não");
@@ -56,7 +69,7 @@ export const usePasswordValidation = (
         return false;
       }
 
-      console.log("Comparando senhas:", password, "com", data.note_password);
+      console.log("Comparando senhas fornecidas:", password.length, "caracteres com", data.note_password.length, "caracteres");
       
       // Direct comparison of passwords
       if (data.note_password === password) {
@@ -77,7 +90,7 @@ export const usePasswordValidation = (
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível validar a senha."
+        description: "Não foi possível validar a senha. Tente novamente."
       });
       return false;
     }

@@ -87,26 +87,35 @@ export const useNoteHandlers = (
     }
     
     // Mostramos um toast inicial para feedback imediato
-    toast({
+    const loadingToast = toast({
       title: "Salvando...",
       description: "Sua nota está sendo salva."
     });
     
-    const savedNote = await addOrUpdateNote(newNote, selectedNote);
-    if (savedNote) {
-      setNewNoteDialog(false);
-      setNewNote({ title: "", content: "", isProtected: false, password: "" });
-      setSelectedNote(null);
-      
+    try {
+      const savedNote = await addOrUpdateNote(newNote, selectedNote);
+      if (savedNote) {
+        setNewNoteDialog(false);
+        setNewNote({ title: "", content: "", isProtected: false, password: "" });
+        setSelectedNote(null);
+        
+        toast({
+          title: "Sucesso",
+          description: selectedNote ? "Nota atualizada com sucesso!" : "Nota adicionada com sucesso!"
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar nota:", error);
       toast({
-        title: "Sucesso",
-        description: selectedNote ? "Nota atualizada com sucesso!" : "Nota adicionada com sucesso!"
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar a nota. Tente novamente."
       });
     }
   };
 
   const handlePasswordValidation = async () => {
-    console.log("Validando senha:", password ? "senha fornecida" : "sem senha");
+    console.log("Validando senha:", password ? password.length + " caracteres fornecidos" : "sem senha");
     
     if (!password.trim()) {
       toast({
@@ -117,14 +126,34 @@ export const useNoteHandlers = (
       return;
     }
     
-    const isValid = await validatePassword();
-    console.log("Senha validada:", isValid);
+    // Mostrar feedback de carregamento
+    toast({
+      title: "Verificando senha...",
+      description: "Aguarde um momento."
+    });
     
-    if (isValid) {
-      setPasswordDialog(false);
-      setTimeout(() => {
-        setViewDialog(true);
-      }, 100);
+    try {
+      const isValid = await validatePassword();
+      console.log("Resultado da validação da senha:", isValid);
+      
+      if (isValid) {
+        setPasswordDialog(false);
+        // Use setTimeout to ensure UI updates properly before showing the note
+        setTimeout(() => {
+          setViewDialog(true);
+        }, 100);
+        toast({
+          title: "Sucesso",
+          description: "Senha validada com sucesso!"
+        });
+      }
+    } catch (error) {
+      console.error("Erro durante validação de senha:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao validar senha. Tente novamente."
+      });
     }
   };
 

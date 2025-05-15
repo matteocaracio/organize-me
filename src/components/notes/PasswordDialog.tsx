@@ -36,12 +36,12 @@ const PasswordDialog = ({
     }
   };
   
-  // Clear password when dialog closes
+  // Clear password when dialog closes and focus input when opens
   useEffect(() => {
     if (!open) {
       onPasswordChange("");
     } else {
-      // Focus on input when dialog opens
+      // Focus on input when dialog opens with a small delay to ensure DOM is ready
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -52,7 +52,7 @@ const PasswordDialog = ({
 
   const handleValidate = () => {
     if (password.trim()) {
-      console.log("Validando senha no clique do botão:", password);
+      console.log("Validando senha no clique do botão:", password.length, "caracteres");
       onValidate();
     }
   };
@@ -92,7 +92,6 @@ const PasswordDialog = ({
             variant="outline"
             onClick={() => {
               onOpenChange(false);
-              onPasswordChange("");
             }}
           >
             Cancelar
