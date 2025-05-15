@@ -1,8 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-// Import just the compare function we need
-import { compare } from "bcryptjs"; 
 
 export const usePasswordValidation = (
   password: string,
@@ -10,7 +8,10 @@ export const usePasswordValidation = (
 ) => {
   const validatePassword = async (): Promise<boolean> => {
     try {
-      if (!password.trim()) {
+      console.log("Iniciando validação de senha");
+      
+      if (!password || !password.trim()) {
+        console.error("Senha vazia fornecida");
         toast({
           variant: "destructive",
           title: "Erro",
@@ -21,6 +22,7 @@ export const usePasswordValidation = (
       
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
+        console.error("Nenhum usuário autenticado");
         toast({
           variant: "destructive",
           title: "Erro",
@@ -29,6 +31,8 @@ export const usePasswordValidation = (
         return false;
       }
 
+      console.log("Buscando senha global para o usuário:", user.user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('note_password')
@@ -36,10 +40,14 @@ export const usePasswordValidation = (
         .single();
 
       if (error) {
+        console.error("Erro ao buscar perfil:", error);
         throw error;
       }
 
+      console.log("Perfil encontrado:", data ? "sim" : "não");
+      
       if (!data?.note_password) {
+        console.error("Senha global não configurada");
         toast({
           variant: "destructive",
           title: "Erro",
@@ -50,29 +58,24 @@ export const usePasswordValidation = (
 
       // Simple check if stored passwords are not hashed
       if (data.note_password === password) {
+        console.log("Senha corresponde diretamente (não-hash)");
         setNotePassword(password);
         return true;
       }
 
-      // For password comparison using bcryptjs (if passwords are hashed)
-      try {
-        const isValid = await compare(password, data.note_password);
-        if (isValid) {
-          setNotePassword(password);
-          return true;
-        }
-      } catch (err) {
-        console.error("Error comparing passwords:", err);
-      }
-
+      // Para comparações de senha sem usar bcrypt
+      // Nota: O código original usava bcryptjs, mas como estamos tendo problemas com ele,
+      // vamos simplificar e usar apenas a comparação direta por enquanto
+      console.error("Senha incorreta");
       toast({
         variant: "destructive",
         title: "Erro",
         description: "Senha incorreta."
       });
       return false;
+      
     } catch (error) {
-      console.error('Error validating password:', error);
+      console.error('Erro ao validar senha:', error);
       toast({
         variant: "destructive",
         title: "Erro",

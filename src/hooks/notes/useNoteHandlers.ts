@@ -1,3 +1,4 @@
+
 import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 import { useNotePassword } from "@/hooks/useNotePassword";
 import type { Note } from "@/components/notes/types";
@@ -30,18 +31,23 @@ export const useNoteHandlers = (
   } = useNotePassword();
 
   const handleViewNote = async (id: string) => {
+    console.log("Tentando visualizar nota com ID:", id);
+    console.log("Notas disponíveis:", notes);
+    
     const noteToView = notes.find(note => note.id === id);
     if (noteToView) {
+      console.log("Nota encontrada:", noteToView);
       setSelectedNote(noteToView);
       
-      // If the note is protected, show password dialog
+      // Se a nota é protegida, mostra diálogo de senha
       if (noteToView.isProtected) {
         setPasswordDialog(true);
       } else {
-        // Otherwise, show the note directly
+        // Senão, mostra a nota diretamente
         setViewDialog(true);
       }
     } else {
+      console.error("Nota não encontrada com ID:", id);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -91,7 +97,20 @@ export const useNoteHandlers = (
   };
 
   const handlePasswordValidation = async () => {
+    console.log("Validando senha:", password ? "senha fornecida" : "sem senha");
+    
+    if (!password.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Digite uma senha para continuar."
+      });
+      return;
+    }
+    
     const isValid = await validatePassword();
+    console.log("Senha validada:", isValid);
+    
     if (isValid) {
       setPasswordDialog(false);
       setViewDialog(true);
