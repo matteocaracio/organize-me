@@ -29,7 +29,7 @@ const PasswordDialog = ({
   
   // Handle Enter key press to submit the form
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && password.trim()) {
       e.preventDefault();
       onValidate();
     }
@@ -68,6 +68,7 @@ const PasswordDialog = ({
             onChange={(e) => onPasswordChange(e.target.value)}
             onKeyDown={handleKeyPress}
             autoFocus
+            className="mt-2"
           />
         </div>
         <DialogFooter>
@@ -80,7 +81,12 @@ const PasswordDialog = ({
           >
             Cancelar
           </Button>
-          <Button onClick={onValidate}>Continuar</Button>
+          <Button 
+            onClick={onValidate}
+            disabled={!password.trim()}
+          >
+            Continuar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

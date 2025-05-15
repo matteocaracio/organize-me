@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { NotesProvider } from "@/components/notes/NotesContext";
 import NoteList from "@/components/notes/NoteList";
 import DeletedNoteList from "@/components/notes/DeletedNoteList";
@@ -77,6 +77,11 @@ const Notes = () => {
 
   const { searchTerm, setSearchTerm, filteredNotes } = useNoteFilters(notes);
 
+  // Memoize the fetchNotes function to improve performance
+  const memoizedFetchNotes = useCallback(() => {
+    fetchNotes(showDeleted);
+  }, [showDeleted, fetchNotes]);
+
   useEffect(() => {
     const checkPassword = async () => {
       const { data: user } = await supabase.auth.getUser();
@@ -100,8 +105,8 @@ const Notes = () => {
 
   useEffect(() => {
     // Fetch notes initially and when showDeleted changes
-    fetchNotes(showDeleted);
-  }, [showDeleted, fetchNotes]);
+    memoizedFetchNotes();
+  }, [showDeleted, memoizedFetchNotes]);
 
   return (
     <NotesProvider>

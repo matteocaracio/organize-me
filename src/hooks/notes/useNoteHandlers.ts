@@ -93,6 +93,11 @@ export const useNoteHandlers = (
       setSelectedNote(null);
       // Atualiza a lista de notas após salvar
       await fetchNotes();
+      
+      toast({
+        title: "Sucesso",
+        description: selectedNote ? "Nota atualizada com sucesso!" : "Nota adicionada com sucesso!"
+      });
     }
   };
 

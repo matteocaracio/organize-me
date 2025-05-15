@@ -63,9 +63,6 @@ export const usePasswordValidation = (
         return true;
       }
 
-      // Para comparações de senha sem usar bcrypt
-      // Nota: O código original usava bcryptjs, mas como estamos tendo problemas com ele,
-      // vamos simplificar e usar apenas a comparação direta por enquanto
       console.error("Senha incorreta");
       toast({
         variant: "destructive",
@@ -73,7 +70,6 @@ export const usePasswordValidation = (
         description: "Senha incorreta."
       });
       return false;
-      
     } catch (error) {
       console.error('Erro ao validar senha:', error);
       toast({

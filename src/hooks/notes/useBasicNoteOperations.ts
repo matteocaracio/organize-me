@@ -54,7 +54,9 @@ export const useBasicNoteOperations = () => {
         
         console.log("Notas carregadas:", formattedNotes.length, "showDeleted:", showDeleted);
         setNotes(formattedNotes);
+        return formattedNotes;
       }
+      return [];
     } catch (error) {
       console.error('Error fetching notes:', error);
       toast({
@@ -62,6 +64,7 @@ export const useBasicNoteOperations = () => {
         title: "Erro",
         description: "Não foi possível carregar as notas."
       });
+      return [];
     }
   };
 
@@ -136,16 +139,12 @@ export const useBasicNoteOperations = () => {
 
         console.log("Nota salva com sucesso:", note);
 
+        // Update the local notes state immediately for better UI responsiveness
         if (selectedNote) {
-          setNotes(notes.map((n) => (n.id === selectedNote.id ? note : n)));
+          setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? note : n)));
         } else {
-          setNotes([note, ...notes]);
+          setNotes(prevNotes => [note, ...prevNotes]);
         }
-
-        toast({
-          title: "Sucesso",
-          description: selectedNote ? "Nota atualizada com sucesso!" : "Nota adicionada com sucesso!"
-        });
         
         return note;
       }
