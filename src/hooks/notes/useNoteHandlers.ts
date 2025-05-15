@@ -32,7 +32,7 @@ export const useNoteHandlers = (
 
   const handleViewNote = async (id: string) => {
     console.log("Tentando visualizar nota com ID:", id);
-    console.log("Notas disponíveis:", notes);
+    console.log("Notas disponíveis:", notes.length);
     
     const noteToView = notes.find(note => note.id === id);
     if (noteToView) {
@@ -86,13 +86,17 @@ export const useNoteHandlers = (
       return;
     }
     
+    // Mostramos um toast inicial para feedback imediato
+    toast({
+      title: "Salvando...",
+      description: "Sua nota está sendo salva."
+    });
+    
     const savedNote = await addOrUpdateNote(newNote, selectedNote);
     if (savedNote) {
       setNewNoteDialog(false);
       setNewNote({ title: "", content: "", isProtected: false, password: "" });
       setSelectedNote(null);
-      // Atualiza a lista de notas após salvar
-      await fetchNotes();
       
       toast({
         title: "Sucesso",
@@ -118,7 +122,9 @@ export const useNoteHandlers = (
     
     if (isValid) {
       setPasswordDialog(false);
-      setViewDialog(true);
+      setTimeout(() => {
+        setViewDialog(true);
+      }, 100);
     }
   };
 

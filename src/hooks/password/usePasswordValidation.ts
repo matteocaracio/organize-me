@@ -56,9 +56,11 @@ export const usePasswordValidation = (
         return false;
       }
 
-      // Simple check if stored passwords are not hashed
+      console.log("Comparando senhas:", password, "com", data.note_password);
+      
+      // Direct comparison of passwords
       if (data.note_password === password) {
-        console.log("Senha corresponde diretamente (não-hash)");
+        console.log("Senha válida! Definindo senha da nota.");
         setNotePassword(password);
         return true;
       }

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ const PasswordDialog = ({
   password,
   onPasswordChange,
 }: PasswordDialogProps) => {
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Handle Enter key press to submit the form
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -39,8 +40,22 @@ const PasswordDialog = ({
   useEffect(() => {
     if (!open) {
       onPasswordChange("");
+    } else {
+      // Focus on input when dialog opens
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
     }
   }, [open, onPasswordChange]);
+
+  const handleValidate = () => {
+    if (password.trim()) {
+      console.log("Validando senha no clique do botão:", password);
+      onValidate();
+    }
+  };
   
   return (
     <Dialog 
@@ -62,6 +77,7 @@ const PasswordDialog = ({
             Esta nota está protegida por senha. Digite a senha para continuar.
           </p>
           <Input
+            ref={inputRef}
             type="password"
             placeholder="Digite a senha"
             value={password}
@@ -82,7 +98,7 @@ const PasswordDialog = ({
             Cancelar
           </Button>
           <Button 
-            onClick={onValidate}
+            onClick={handleValidate}
             disabled={!password.trim()}
           >
             Continuar
