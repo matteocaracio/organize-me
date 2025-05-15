@@ -24,14 +24,12 @@ export default defineConfig(({ mode }) => ({
   build: {
     commonjsOptions: {
       transformMixedEsModules: true,
-      include: [/node_modules/],
-    },
-    rollupOptions: {
-      external: ['bcryptjs']
+      include: [/node_modules/, /bcryptjs/],
     }
   },
   // Properly handle ESM vs CommonJS conflicts
   optimizeDeps: {
+    include: ['bcryptjs'],
     esbuildOptions: {
       // Node.js global to browser globalThis
       define: {
