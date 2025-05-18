@@ -1,60 +1,39 @@
 
-import { useState } from "react";
-import { Expense } from "./types/expense";
+import { useEffect } from "react";
 import ExpenseForm from "./expense/ExpenseForm";
 import ExpenseSummary from "./expense/ExpenseSummary";
+import { useExpenseOperations } from "@/hooks/finance/useExpenseOperations";
+import { Expense } from "./types/expense";
+import { Loader2 } from "lucide-react";
 
 const ExpenseTracker = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([
-    { 
-      id: "1", 
-      description: "Supermercado", 
-      amount: 250.75, 
-      date: "2025-04-20", 
-      category: "Alimentação" 
-    },
-    { 
-      id: "2", 
-      description: "Netflix", 
-      amount: 39.90, 
-      date: "2025-04-15", 
-      category: "Entretenimento" 
-    },
-    { 
-      id: "3", 
-      description: "Conta de luz", 
-      amount: 120.35, 
-      date: "2025-04-10", 
-      category: "Moradia" 
-    },
-    { 
-      id: "4", 
-      description: "Combustível", 
-      amount: 200.00, 
-      date: "2025-04-05", 
-      category: "Transporte" 
-    },
-    { 
-      id: "5", 
-      description: "Farmácia", 
-      amount: 89.75, 
-      date: "2025-04-18", 
-      category: "Saúde" 
-    }
-  ]);
+  const { 
+    expenses, 
+    loading, 
+    fetchExpenses, 
+    addExpense, 
+    deleteExpense 
+  } = useExpenseOperations();
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
 
   const handleAddExpense = (newExpenseData: Omit<Expense, "id">) => {
-    const expense: Expense = {
-      ...newExpenseData,
-      id: Date.now().toString()
-    };
-    
-    setExpenses([...expenses, expense]);
+    addExpense(newExpenseData);
   };
 
   const handleDeleteExpense = (id: string) => {
-    setExpenses(expenses.filter(expense => expense.id !== id));
+    deleteExpense(id);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

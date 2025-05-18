@@ -10,5 +10,5 @@ export type Expense = {
 export const EXPENSE_CATEGORIES = [
   "Alimentação", "Entretenimento", "Moradia", "Transporte", "Saúde", 
   "Educação", "Roupas", "Lazer", "Restaurantes", "Assinaturas", 
-  "Utilidades", "Tecnologia", "Outros"
+  "Utilidades", "Tecnologia", "Internet", "Outros"
 ];

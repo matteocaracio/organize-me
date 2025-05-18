@@ -1,35 +1,57 @@
 
-export const getSavingTips = (category: string, description: string): string => {
-  // First check if there are specific tips for common expense descriptions
-  const descriptionLower = description.toLowerCase();
+export const getSavingTips = (category: string, description: string = ""): string => {
+  // Normalize the expense description for better matching
+  const normalizedDescription = description.toLowerCase().trim();
   
-  if (descriptionLower.includes("wifi") || descriptionLower.includes("internet")) {
-    return "Compare planos de diferentes provedores, negocie o valor da mensalidade, ou compartilhe a conexão com vizinhos para dividir custos.";
+  // Check for specific keywords first
+  if (normalizedDescription.includes("wifi") || 
+      normalizedDescription.includes("internet") || 
+      normalizedDescription.includes("banda larga")) {
+    return "Para economizar em internet, compare diferentes provedores, contrate pacotes básicos suficientes para seu uso e considere dividir o serviço com vizinhos se possível.";
   }
   
-  if (descriptionLower.includes("celular") || descriptionLower.includes("telefone")) {
-    return "Avalie se seu plano atual atende suas necessidades ou se há opções mais econômicas. Considere planos familiares se possível.";
+  // Category based tips
+  switch (category) {
+    case "Alimentação":
+      return "Planeje suas refeições com antecedência, compre alimentos da estação, aproveite promoções e evite desperdícios guardando sobras para outras refeições.";
+      
+    case "Entretenimento":
+      return "Considere compartilhar assinaturas de streaming com familiares, aproveite conteúdos gratuitos e busque alternativas de lazer que não exigem gastos.";
+      
+    case "Moradia":
+      return "Economize energia apagando luzes desnecessárias, utilize eletrodomésticos eficientes e faça pequenos reparos você mesmo quando possível.";
+      
+    case "Transporte":
+      return "Considere caronas, transporte público ou bicicleta quando viável. Mantenha seu veículo em boas condições para economia de combustível.";
+      
+    case "Saúde":
+      return "Invista em prevenção, pratique exercícios regularmente e verifique programas de desconto em farmácias ou genéricos.";
+      
+    case "Educação":
+      return "Procure bolsas de estudo, materiais gratuitos online e cursos com desconto ou em plataformas educacionais acessíveis.";
+      
+    case "Roupas":
+      return "Compre peças versáteis e de qualidade que durem mais tempo, aproveite liquidações e considere brechós para encontrar bons itens a preços menores.";
+      
+    case "Lazer":
+      return "Busque atividades gratuitas ou de baixo custo em sua cidade, como parques, exposições e eventos culturais com entrada franca.";
+      
+    case "Restaurantes":
+      return "Coma fora com menos frequência, aproveite promoções e cupons de desconto, ou escolha estabelecimentos com bom custo-benefício.";
+      
+    case "Assinaturas":
+      return "Revise regularmente suas assinaturas para cancelar serviços pouco utilizados e considere planos familiares para economizar.";
+      
+    case "Utilidades":
+      return "Compare preços entre fornecedores, monitore seu consumo e implemente práticas sustentáveis que reduzam gastos com água e energia.";
+      
+    case "Tecnologia":
+      return "Pesquise bem antes de comprar, considere modelos anteriores mais baratos e proteja seus dispositivos para evitar reparos caros.";
+
+    case "Internet":
+      return "Compare planos de diferentes provedores, negocie descontos com sua operadora atual ou considere pacotes mais básicos se atenderem suas necessidades.";
+      
+    default:
+      return "Para economizar, mantenha um orçamento detalhado, defina metas de economia e evite compras por impulso.";
   }
-  
-  if (descriptionLower.includes("streaming") || descriptionLower.includes("netflix") || descriptionLower.includes("spotify")) {
-    return "Considere planos compartilhados com família ou amigos, ou alterne entre serviços diferentes a cada mês em vez de assinar vários simultaneamente.";
-  }
-  
-  // If no specific description matches, fall back to category-based tips
-  const tips = {
-    "Alimentação": "Compare preços em diferentes supermercados, compre itens da estação e planeje as refeições com antecedência.",
-    "Entretenimento": "Busque alternativas gratuitas como eventos comunitários ou utilize plataformas de streaming compartilhadas.",
-    "Moradia": "Verifique vazamentos, use lâmpadas LED e mantenha os aparelhos desligados quando não estiver usando.",
-    "Transporte": "Utilize transporte público, compartilhe caronas ou considere andar a pé/bicicleta para trajetos curtos.",
-    "Saúde": "Prefira medicamentos genéricos e faça check-ups regulares para prevenir problemas maiores.",
-    "Educação": "Procure por bolsas de estudo, cursos gratuitos online ou desconto para pagamento antecipado.",
-    "Roupas": "Espere por promoções sazonais e compre peças versáteis e de qualidade que durem mais.",
-    "Lazer": "Procure atividades gratuitas ou com desconto nos dias de semana.",
-    "Restaurantes": "Limitar refeições fora de casa a ocasiões especiais e preparar marmitas para o trabalho/escola.",
-    "Assinaturas": "Avalie todas as assinaturas mensais e cancele as que você não usa com frequência.",
-    "Utilidades": "Compare provedores de serviços, negocie tarifas, e considere alternativas mais econômicas ou planos que melhor se adequam ao seu consumo.",
-    "Tecnologia": "Pesquise preços antes de comprar, considere equipamentos recondicionados e avalie se a atualização é realmente necessária."
-  };
-  
-  return tips[category as keyof typeof tips] || "Analise se este gasto é realmente necessário e procure alternativas mais econômicas.";
 };

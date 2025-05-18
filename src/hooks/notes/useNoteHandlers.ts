@@ -2,7 +2,7 @@
 import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 import { useNotePassword } from "@/hooks/useNotePassword";
 import type { Note } from "@/components/notes/types";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export const useNoteHandlers = (
   setNewNoteDialog: (value: boolean) => void,
@@ -26,9 +26,10 @@ export const useNoteHandlers = (
 
   const {
     password,
-    setPassword,
     validatePassword,
   } = useNotePassword();
+
+  const { toast } = useToast();
 
   const handleViewNote = async (id: string) => {
     console.log("Tentando visualizar nota com ID:", id);
@@ -87,7 +88,7 @@ export const useNoteHandlers = (
     }
     
     // Mostramos um toast inicial para feedback imediato
-    const loadingToast = toast({
+    toast({
       title: "Salvando...",
       description: "Sua nota está sendo salva."
     });

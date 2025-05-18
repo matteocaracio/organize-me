@@ -1,12 +1,44 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import ExpenseTracker from "@/components/finance/ExpenseTracker";
 import InvestmentSimulator from "@/components/finance/InvestmentSimulator";
 import MarketData from "@/components/finance/MarketData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 const Finance = () => {
   const [activeTab, setActiveTab] = useState("expenses");
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        toast({
+          title: "Acesso restrito",
+          description: "Você precisa estar logado para acessar esta página.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+      }
+      setLoading(false);
+    };
+
+    checkUser();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
