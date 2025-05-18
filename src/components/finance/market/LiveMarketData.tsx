@@ -3,7 +3,6 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
 interface LiveMarketDataProps {
   usdBrlPrice: any;
@@ -23,20 +22,6 @@ const LiveMarketData = ({
   handleRefresh 
 }: LiveMarketDataProps) => {
   
-  const refreshPageAndData = () => {
-    // Show loading toast
-    toast.loading("Atualizando dados do mercado...");
-    
-    // First refresh the data
-    handleRefresh();
-    
-    // Then after a small delay to allow data fetch to start, refresh the page
-    setTimeout(() => {
-      // This will preserve the current URL and maintain authentication state
-      window.location.reload();
-    }, 500);
-  };
-  
   return (
     <Card className="bg-muted/40">
       <CardHeader className="pb-2">
@@ -45,7 +30,7 @@ const LiveMarketData = ({
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={refreshPageAndData}
+            onClick={handleRefresh}
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />

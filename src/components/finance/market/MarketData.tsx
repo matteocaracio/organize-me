@@ -5,8 +5,8 @@ import { useFinanceData } from "@/hooks/useFinanceData";
 import { useMarketHighlights } from "@/hooks/finance/useMarketHighlights";
 import LiveMarketData from "./LiveMarketData";
 import MarketIndices from "./MarketIndices";
-import HistoricalChart from "./HistoricalChart";
 import StockTable from "./StockTable";
+import InternationalStockTable from "./InternationalStockTable";
 import MarketHighlights from "./MarketHighlight";
 
 // Real market data (as of May 2025 - fictional for the future)
@@ -25,6 +25,20 @@ const stockData = [
   { ticker: "GGBR4", name: "Gerdau PN", price: 22.30, change: -0.65, changePercent: -2.83, volume: "15.8M" },
 ];
 
+// Dados das ações internacionais mais famosas
+const internationalStockData = [
+  { ticker: "AAPL", name: "Apple Inc.", price: 245.63, change: 3.21, changePercent: 1.32, volume: "76.2M" },
+  { ticker: "MSFT", name: "Microsoft Corp.", price: 436.27, change: 5.43, changePercent: 1.26, volume: "45.1M" },
+  { ticker: "AMZN", name: "Amazon.com Inc.", price: 198.42, change: -2.53, changePercent: -1.26, volume: "38.7M" },
+  { ticker: "GOOGL", name: "Alphabet Inc.", price: 187.56, change: 2.31, changePercent: 1.25, volume: "27.9M" },
+  { ticker: "META", name: "Meta Platforms Inc.", price: 532.87, change: 8.73, changePercent: 1.67, volume: "32.5M" },
+  { ticker: "TSLA", name: "Tesla Inc.", price: 253.21, change: -4.32, changePercent: -1.68, volume: "58.3M" },
+  { ticker: "NVDA", name: "NVIDIA Corp.", price: 1245.76, change: 24.56, changePercent: 2.01, volume: "41.2M" },
+  { ticker: "JPM", name: "JPMorgan Chase & Co.", price: 232.45, change: 1.75, changePercent: 0.76, volume: "15.8M" },
+  { ticker: "V", name: "Visa Inc.", price: 317.82, change: -2.14, changePercent: -0.67, volume: "12.4M" },
+  { ticker: "WMT", name: "Walmart Inc.", price: 86.73, change: 1.24, changePercent: 1.45, volume: "18.9M" }
+];
+
 const indicesData = [
   { name: "Ibovespa", value: 125463, change: 1254, changePercent: 1.01 },
   { name: "S&P 500", value: 5320, change: 35, changePercent: 0.66 },
@@ -34,30 +48,22 @@ const indicesData = [
   { name: "Nikkei 225", value: 37620, change: -210, changePercent: -0.56 },
 ];
 
-const historicalData = [
-  { month: "Jan", Ibovespa: 115000, SP500: 4800, Nasdaq: 15100 },
-  { month: "Fev", Ibovespa: 118000, SP500: 4900, Nasdaq: 15300 },
-  { month: "Mar", Ibovespa: 120000, SP500: 5000, Nasdaq: 15600 },
-  { month: "Abr", Ibovespa: 122000, SP500: 5100, Nasdaq: 15900 },
-  { month: "Mai", Ibovespa: 125000, SP500: 5250, Nasdaq: 16500 },
-  { month: "Jun", Ibovespa: 123500, SP500: 5180, Nasdaq: 16200 },
-  { month: "Jul", Ibovespa: 124800, SP500: 5240, Nasdaq: 16350 },
-  { month: "Ago", Ibovespa: 123200, SP500: 5190, Nasdaq: 16100 },
-  { month: "Set", Ibovespa: 124100, SP500: 5270, Nasdaq: 16450 },
-  { month: "Out", Ibovespa: 125500, SP500: 5290, Nasdaq: 16600 },
-  { month: "Nov", Ibovespa: 126200, SP500: 5310, Nasdaq: 16750 },
-  { month: "Dez", Ibovespa: 125463, SP500: 5320, Nasdaq: 16780 },
-];
-
 const MarketData = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [intlSearchQuery, setIntlSearchQuery] = useState("");
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const { usdBrlPrice, stockPrices, loading, error, refreshData } = useFinanceData();
   const { marketHighlights } = useMarketHighlights(usdBrlPrice, stockPrices, stockData);
 
   const handleRefresh = () => {
+    toast.loading("Atualizando dados do mercado...");
     refreshData();
     setLastUpdateTime(new Date());
+    
+    // Simular uma atualização dos dados após um breve período
+    setTimeout(() => {
+      toast.success("Dados do mercado atualizados com sucesso!");
+    }, 1500);
   };
 
   // Get real-time prices for stocks if available
@@ -68,6 +74,13 @@ const MarketData = () => {
     }
     // Use static data as fallback
     const stockItem = stockData.find(stock => stock.ticker === ticker);
+    return stockItem ? stockItem.price : 0;
+  };
+  
+  // Get prices for international stocks
+  const getIntlStockPrice = (ticker: string) => {
+    // For now, just return the static data as we don't have real-time API for international stocks
+    const stockItem = internationalStockData.find(stock => stock.ticker === ticker);
     return stockItem ? stockItem.price : 0;
   };
 
@@ -84,14 +97,21 @@ const MarketData = () => {
       
       <MarketIndices indices={indicesData} />
       
-      <HistoricalChart data={historicalData} />
-      
-      <StockTable 
-        stocks={stockData}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        getStockPrice={getStockPrice}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <StockTable 
+          stocks={stockData}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          getStockPrice={getStockPrice}
+        />
+        
+        <InternationalStockTable 
+          stocks={internationalStockData}
+          searchQuery={intlSearchQuery}
+          setSearchQuery={setIntlSearchQuery}
+          getStockPrice={getIntlStockPrice}
+        />
+      </div>
       
       <MarketHighlights 
         highlights={marketHighlights}
