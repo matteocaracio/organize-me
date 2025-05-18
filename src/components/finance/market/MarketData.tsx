@@ -52,8 +52,10 @@ const MarketData = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [intlSearchQuery, setIntlSearchQuery] = useState("");
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
+  const [localStockData, setLocalStockData] = useState(stockData);
+  const [localIntlStockData, setLocalIntlStockData] = useState(internationalStockData);
   const { usdBrlPrice, stockPrices, loading, error, refreshData } = useFinanceData();
-  const { marketHighlights } = useMarketHighlights(usdBrlPrice, stockPrices, stockData);
+  const { marketHighlights } = useMarketHighlights(usdBrlPrice, stockPrices, localStockData);
 
   const handleRefresh = () => {
     toast.loading("Atualizando dados do mercado...");
@@ -62,6 +64,32 @@ const MarketData = () => {
     
     // Simular uma atualização dos dados após um breve período
     setTimeout(() => {
+      // Randomize stock data changes for both Brazilian and international stocks
+      const updatedStockData = localStockData.map(stock => {
+        const changeValue = (Math.random() * 2 - 1).toFixed(2);
+        const changePercent = (Math.random() * 5 - 2).toFixed(2);
+        return {
+          ...stock,
+          price: parseFloat((stock.price + parseFloat(changeValue)).toFixed(2)),
+          change: parseFloat(changeValue),
+          changePercent: parseFloat(changePercent)
+        };
+      });
+      
+      const updatedIntlStockData = localIntlStockData.map(stock => {
+        const changeValue = (Math.random() * 3 - 1.5).toFixed(2);
+        const changePercent = (Math.random() * 5 - 2).toFixed(2);
+        return {
+          ...stock,
+          price: parseFloat((stock.price + parseFloat(changeValue)).toFixed(2)),
+          change: parseFloat(changeValue),
+          changePercent: parseFloat(changePercent)
+        };
+      });
+      
+      setLocalStockData(updatedStockData);
+      setLocalIntlStockData(updatedIntlStockData);
+      
       toast.success("Dados do mercado atualizados com sucesso!");
     }, 1500);
   };
@@ -72,15 +100,15 @@ const MarketData = () => {
     if (stockPrices && stockPrices[symbol]) {
       return parseFloat(stockPrices[symbol].price);
     }
-    // Use static data as fallback
-    const stockItem = stockData.find(stock => stock.ticker === ticker);
+    // Use local data as fallback
+    const stockItem = localStockData.find(stock => stock.ticker === ticker);
     return stockItem ? stockItem.price : 0;
   };
   
   // Get prices for international stocks
   const getIntlStockPrice = (ticker: string) => {
-    // For now, just return the static data as we don't have real-time API for international stocks
-    const stockItem = internationalStockData.find(stock => stock.ticker === ticker);
+    // For now, return the local data as we simulate real-time updates
+    const stockItem = localIntlStockData.find(stock => stock.ticker === ticker);
     return stockItem ? stockItem.price : 0;
   };
 
@@ -99,14 +127,14 @@ const MarketData = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <StockTable 
-          stocks={stockData}
+          stocks={localStockData}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           getStockPrice={getStockPrice}
         />
         
         <InternationalStockTable 
-          stocks={internationalStockData}
+          stocks={localIntlStockData}
           searchQuery={intlSearchQuery}
           setSearchQuery={setIntlSearchQuery}
           getStockPrice={getIntlStockPrice}

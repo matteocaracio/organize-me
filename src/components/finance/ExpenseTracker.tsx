@@ -33,7 +33,23 @@ type Expense = {
   category: string;
 };
 
-const getSavingTips = (category: string): string => {
+const getSavingTips = (category: string, description: string): string => {
+  // First check if there are specific tips for common expense descriptions
+  const descriptionLower = description.toLowerCase();
+  
+  if (descriptionLower.includes("wifi") || descriptionLower.includes("internet")) {
+    return "Compare planos de diferentes provedores, negocie o valor da mensalidade, ou compartilhe a conexão com vizinhos para dividir custos.";
+  }
+  
+  if (descriptionLower.includes("celular") || descriptionLower.includes("telefone")) {
+    return "Avalie se seu plano atual atende suas necessidades ou se há opções mais econômicas. Considere planos familiares se possível.";
+  }
+  
+  if (descriptionLower.includes("streaming") || descriptionLower.includes("netflix") || descriptionLower.includes("spotify")) {
+    return "Considere planos compartilhados com família ou amigos, ou alterne entre serviços diferentes a cada mês em vez de assinar vários simultaneamente.";
+  }
+  
+  // If no specific description matches, fall back to category-based tips
   const tips = {
     "Alimentação": "Compare preços em diferentes supermercados, compre itens da estação e planeje as refeições com antecedência.",
     "Entretenimento": "Busque alternativas gratuitas como eventos comunitários ou utilize plataformas de streaming compartilhadas.",
@@ -45,6 +61,8 @@ const getSavingTips = (category: string): string => {
     "Lazer": "Procure atividades gratuitas ou com desconto nos dias de semana.",
     "Restaurantes": "Limitar refeições fora de casa a ocasiões especiais e preparar marmitas para o trabalho/escola.",
     "Assinaturas": "Avalie todas as assinaturas mensais e cancele as que você não usa com frequência.",
+    "Utilidades": "Compare provedores de serviços, negocie tarifas, e considere alternativas mais econômicas ou planos que melhor se adequam ao seu consumo.",
+    "Tecnologia": "Pesquise preços antes de comprar, considere equipamentos recondicionados e avalie se a atualização é realmente necessária."
   };
   
   return tips[category as keyof typeof tips] || "Analise se este gasto é realmente necessário e procure alternativas mais econômicas.";
@@ -124,7 +142,8 @@ const ExpenseTracker = () => {
   // Common expense categories for the dropdown
   const categories = [
     "Alimentação", "Entretenimento", "Moradia", "Transporte", "Saúde", 
-    "Educação", "Roupas", "Lazer", "Restaurantes", "Assinaturas", "Outros"
+    "Educação", "Roupas", "Lazer", "Restaurantes", "Assinaturas", 
+    "Utilidades", "Tecnologia", "Outros"
   ];
 
   return (
@@ -211,7 +230,7 @@ const ExpenseTracker = () => {
                               <Lightbulb className="h-4 w-4 text-yellow-500" />
                             </TooltipTrigger>
                             <TooltipContent side="left" className="max-w-sm">
-                              <p>{getSavingTips(expense.category)}</p>
+                              <p>{getSavingTips(expense.category, expense.description)}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
