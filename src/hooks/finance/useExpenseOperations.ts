@@ -64,11 +64,12 @@ export const useExpenseOperations = () => {
         return null;
       }
 
+      // Convert number to string for the database insert
       const { data, error } = await supabase
         .from("expenses")
         .insert({
           description: newExpense.description,
-          amount: newExpense.amount,
+          amount: newExpense.amount.toString(), // Convert to string here
           date: newExpense.date,
           category: newExpense.category,
           user_id: user.user.id,
