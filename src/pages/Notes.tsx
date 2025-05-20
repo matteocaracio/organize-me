@@ -108,6 +108,11 @@ const Notes = () => {
     memoizedFetchNotes();
   }, [showDeleted, memoizedFetchNotes]);
 
+  // Handle toggling between note lists - important for ensuring state consistency
+  const handleToggleDeleted = useCallback(() => {
+    setShowDeleted(prev => !prev);
+  }, []);
+
   return (
     <NotesProvider>
       <div className="space-y-6">
@@ -124,7 +129,7 @@ const Notes = () => {
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           showDeleted={showDeleted}
-          onToggleDeleted={() => setShowDeleted(!showDeleted)}
+          onToggleDeleted={handleToggleDeleted}
         />
 
         {showDeleted ? (

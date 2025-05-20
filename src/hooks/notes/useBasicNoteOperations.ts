@@ -24,18 +24,20 @@ export const useBasicNoteOperations = () => {
         return [];
       }
 
-      // Otimização: simplificar a consulta e reduzir o número de operações
+      // Build query with explicit IS NULL or IS NOT NULL for better SQL performance
       const query = supabase
         .from('notes')
         .select('*')
-        .eq('user_id', user.user.id)
-        .order('is_pinned', { ascending: false })
-        .order('updated_at', { ascending: false });
-
+        .eq('user_id', user.user.id);
+      
+      // Use explicit IS NULL or IS NOT NULL checks for better reliability
       if (showDeleted) {
         query.not('deleted', 'is', null);
+        query.order('deleted', { ascending: false }); // Sort deleted notes by deletion date
       } else {
         query.is('deleted', null);
+        query.order('is_pinned', { ascending: false })
+             .order('updated_at', { ascending: false });
       }
 
       const { data, error } = await query;
@@ -55,7 +57,7 @@ export const useBasicNoteOperations = () => {
           deletedAt: note.deleted ? new Date(note.deleted) : undefined,
         }));
         
-        console.log("Notas carregadas:", formattedNotes.length, "showDeleted:", showDeleted);
+        console.log(`Fetched ${formattedNotes.length} notes (showDeleted=${showDeleted})`);
         setNotes(formattedNotes);
         setLoading(false);
         return formattedNotes;
@@ -104,7 +106,9 @@ export const useBasicNoteOperations = () => {
         is_pinned: selectedNote?.isPinned || false,
         is_protected: newNote.isProtected,
         updated_at: new Date().toISOString(),
-        user_id: userData.user.id
+        user_id: userData.user.id,
+        // Ensure deleted is null for new or updated notes
+        deleted: null
       };
 
       // Atualização otimista da UI para resposta imediata
@@ -116,9 +120,10 @@ export const useBasicNoteOperations = () => {
         date: new Date(),
         isPinned: !!noteData.is_pinned,
         isProtected: !!noteData.is_protected,
-        deletedAt: undefined,
+        deletedAt: undefined, // Always undefined for new or updated notes
       };
 
+      // Update UI optimistically
       if (selectedNote) {
         setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? {...tempNote, id: selectedNote.id} : n)));
       } else {

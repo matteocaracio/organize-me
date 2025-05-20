@@ -15,9 +15,8 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
 
       if (error) throw error;
 
-      setNotes(notes.map(note =>
-        note.id === id ? { ...note, deletedAt: new Date() } : note
-      ));
+      // Remove the note from the current view immediately
+      setNotes(notes.filter(note => note.id !== id));
 
       toast({
         title: "Sucesso",
@@ -98,6 +97,7 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
 
       if (error) throw error;
 
+      // Remove the note from the current trash view
       setNotes(notes.filter(note => note.id !== id));
 
       toast({

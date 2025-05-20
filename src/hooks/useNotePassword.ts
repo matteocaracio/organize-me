@@ -27,7 +27,11 @@ export const useNotePassword = () => {
   
   // Check if global password is set on component mount
   useEffect(() => {
-    checkGlobalPassword();
+    const initializePassword = async () => {
+      await checkGlobalPassword();
+    };
+    
+    initializePassword();
   }, []);
 
   return {
