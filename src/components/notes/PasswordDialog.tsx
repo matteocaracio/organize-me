@@ -37,30 +37,29 @@ const PasswordDialog = ({
     }
   };
   
-  // Clear password when dialog closes and focus input when opens
+  // Melhorar o foco e limpeza do diálogo
   useEffect(() => {
     if (!open) {
       onPasswordChange("");
       setIsSubmitting(false);
     } else {
-      // Focus on input when dialog opens with a small delay to ensure DOM is ready
+      // Focus on input when dialog opens
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
         }
-      }, 100);
+      }, 50);
     }
   }, [open, onPasswordChange]);
 
   const handleValidate = () => {
     if (password.trim() && !isSubmitting) {
       setIsSubmitting(true);
-      console.log("Validando senha no clique do botão:", password.length, "caracteres");
       onValidate();
-      // Resetamos o estado de submitting após um tempo para permitir nova tentativa se necessário
+      // Reset submission state after a reasonable timeout if needed
       setTimeout(() => {
         setIsSubmitting(false);
-      }, 2000);
+      }, 1500);
     }
   };
   
@@ -70,7 +69,6 @@ const PasswordDialog = ({
       onOpenChange={(isOpen) => {
         if (!isSubmitting) {
           onOpenChange(isOpen);
-          if (!isOpen) onPasswordChange("");
         }
       }}
     >

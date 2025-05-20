@@ -8,14 +8,16 @@ export const useGlobalPasswordCheck = (
 ) => {
   const checkGlobalPassword = async () => {
     try {
+      console.time("checkGlobalPassword");
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
+      // Otimizando a query para ser mais direta e rápida
       const { data, error } = await supabase
         .from('profiles')
         .select('note_password')
         .eq('id', user.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         throw error;
@@ -30,6 +32,7 @@ export const useGlobalPasswordCheck = (
       } else {
         setNotePassword(null);
       }
+      console.timeEnd("checkGlobalPassword");
     } catch (error) {
       console.error('Error checking global password:', error);
     }

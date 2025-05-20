@@ -1,14 +1,16 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export const usePasswordValidation = (
   password: string,
   setNotePassword: (value: string | null) => void
 ) => {
+  const { toast } = useToast();
+
   const validatePassword = async (): Promise<boolean> => {
     try {
-      console.log("Iniciando validação de senha");
+      console.time("validatePassword");
       
       if (!password || !password.trim()) {
         console.error("Senha vazia fornecida");
@@ -20,12 +22,8 @@ export const usePasswordValidation = (
         return false;
       }
       
-      // Get current user
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error("Erro ao obter usuário:", userError);
-        throw userError;
-      }
+      // Get current user - using concise query
+      const { data: userData } = await supabase.auth.getUser();
       
       if (!userData.user) {
         console.error("Nenhum usuário autenticado");
@@ -38,9 +36,8 @@ export const usePasswordValidation = (
       }
       
       const userId = userData.user.id;
-      console.log("Buscando senha global para o usuário:", userId);
       
-      // Get the user's profile with note_password in a simpler query
+      // Otimizando a query para ser mais direta e eficiente
       const { data, error } = await supabase
         .from('profiles')
         .select('note_password')
@@ -56,8 +53,6 @@ export const usePasswordValidation = (
         });
         return false;
       }
-
-      console.log("Perfil encontrado:", data ? "sim" : "não");
       
       if (!data?.note_password) {
         console.error("Senha global não configurada");
@@ -68,13 +63,11 @@ export const usePasswordValidation = (
         });
         return false;
       }
-
-      console.log("Comparando senhas fornecidas");
       
-      // Direct comparison of passwords
+      // Comparação direta de senhas
       if (data.note_password === password) {
-        console.log("Senha válida! Definindo senha da nota.");
         setNotePassword(password);
+        console.timeEnd("validatePassword");
         return true;
       }
 

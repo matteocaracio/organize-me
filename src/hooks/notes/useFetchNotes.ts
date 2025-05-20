@@ -10,6 +10,7 @@ export const useFetchNotes = () => {
   const { toast } = useToast();
 
   const fetchNotes = async (showDeleted: boolean = false) => {
+    console.time("fetchNotes");
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
@@ -51,9 +52,11 @@ export const useFetchNotes = () => {
         
         console.log(`Fetched ${formattedNotes.length} notes (showDeleted=${showDeleted})`);
         setNotes(formattedNotes);
+        console.timeEnd("fetchNotes");
         return formattedNotes;
       }
       
+      console.timeEnd("fetchNotes");
       return [];
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -62,6 +65,7 @@ export const useFetchNotes = () => {
         title: "Erro",
         description: "Não foi possível carregar as notas."
       });
+      console.timeEnd("fetchNotes");
       return [];
     }
   };

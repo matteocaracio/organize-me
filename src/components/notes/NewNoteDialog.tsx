@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NewNoteDialogProps {
@@ -34,10 +34,12 @@ const NewNoteDialog = ({
 }: NewNoteDialogProps) => {
   const [hasGlobalPassword, setHasGlobalPassword] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Check for global password on component mount and when dialog opens
+  // Verificar senha global mais rapidamente quando o diálogo abrir
   useEffect(() => {
     if (open) {
+      console.time("checkGlobalPassword-NewNoteDialog");
       checkGlobalPassword();
     }
   }, [open]);
@@ -52,11 +54,12 @@ const NewNoteDialog = ({
         return;
       }
 
+      // Otimizando a query para ser mais direta
       const { data, error } = await supabase
         .from('profiles')
         .select('note_password')
         .eq('id', user.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error checking global password:', error);
@@ -69,6 +72,7 @@ const NewNoteDialog = ({
       setHasGlobalPassword(false);
     } finally {
       setLoading(false);
+      console.timeEnd("checkGlobalPassword-NewNoteDialog");
     }
   };
 
@@ -76,7 +80,13 @@ const NewNoteDialog = ({
     if (!newNote.title.trim()) {
       return;
     }
-    await onSave();
+    
+    setIsSaving(true);
+    try {
+      await onSave();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -116,10 +126,13 @@ const NewNoteDialog = ({
             <Label htmlFor="protected">Proteger com senha</Label>
           </div>
           
-          {/* Mostrar mensagem dependendo do estado do password global */}
+          {/* Melhorar feedback durante a verificação */}
           {newNote.isProtected && loading && (
             <div className="bg-gray-100 p-3 rounded-md text-gray-600 text-sm flex items-start">
-              <div className="animate-pulse">Verificando senha global...</div>
+              <div className="animate-pulse flex">
+                <span className="mr-2">⏳</span>
+                <span>Verificando senha global...</span>
+              </div>
             </div>
           )}
           
@@ -134,19 +147,12 @@ const NewNoteDialog = ({
           )}
           
           {newNote.isProtected && !loading && hasGlobalPassword && (
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha Global</Label>
-              <Input 
-                id="password" 
-                type="password"
-                placeholder="********" 
-                value="********"
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">
-                Esta nota será protegida com sua senha global. Você pode alterar a senha global nas opções de notas.
-              </p>
+            <div className="bg-green-50 border border-green-200 p-3 rounded-md text-green-600 text-sm flex items-start">
+              <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">Senha global configurada</p>
+                <p>Esta nota será protegida com sua senha global.</p>
+              </div>
             </div>
           )}
         </div>
@@ -154,9 +160,9 @@ const NewNoteDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button 
             onClick={handleSave}
-            disabled={newNote.isProtected && !hasGlobalPassword}
+            disabled={(newNote.isProtected && !hasGlobalPassword) || isSaving}
           >
-            Salvar
+            {isSaving ? "Salvando..." : "Salvar"}
           </Button>
         </DialogFooter>
       </DialogContent>

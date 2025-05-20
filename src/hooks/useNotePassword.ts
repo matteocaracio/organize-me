@@ -25,13 +25,26 @@ export const useNotePassword = () => {
     setPasswordMismatch
   );
   
-  // Check if global password is set on component mount
+  // Otimizando a verificação de senha global na inicialização
   useEffect(() => {
+    let isMounted = true;
+    
     const initializePassword = async () => {
-      await checkGlobalPassword();
+      console.time("initializePassword");
+      if (isMounted) {
+        await checkGlobalPassword();
+      }
+      console.timeEnd("initializePassword");
     };
     
-    initializePassword();
+    // Usando setTimeout(0) para não bloquear a renderização inicial
+    setTimeout(() => {
+      initializePassword();
+    }, 0);
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return {
