@@ -34,7 +34,7 @@ export const useExpenseOperations = () => {
       const formattedExpenses: Expense[] = data.map((expense) => ({
         id: expense.id,
         description: expense.description,
-        amount: parseFloat(expense.amount), // Parse string from database to number
+        amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
         date: expense.date,
         category: expense.category,
       }));
@@ -64,12 +64,12 @@ export const useExpenseOperations = () => {
         return null;
       }
 
-      // Convert number amount to string for database storage
+      // Don't convert amount to string for database storage
       const { data, error } = await supabase
         .from("expenses")
         .insert({
           description: newExpense.description,
-          amount: newExpense.amount.toString(), // Convert number to string for database
+          amount: newExpense.amount, // Keep as number, don't convert to string
           date: newExpense.date,
           category: newExpense.category,
           user_id: user.user.id,
@@ -82,7 +82,7 @@ export const useExpenseOperations = () => {
       const expense: Expense = {
         id: data.id,
         description: data.description,
-        amount: parseFloat(data.amount), // Parse string from database to number
+        amount: typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount,
         date: data.date,
         category: data.category,
       };
@@ -107,14 +107,17 @@ export const useExpenseOperations = () => {
 
   const deleteExpense = async (id: string) => {
     try {
+      // Ensure id is a string
+      const expenseId = typeof id === 'number' ? String(id) : id;
+      
       const { error } = await supabase
         .from("expenses")
         .delete()
-        .eq("id", id);
+        .eq("id", expenseId);
 
       if (error) throw error;
 
-      setExpenses((prevExpenses) => prevExpenses.filter((expense) => expense.id !== id));
+      setExpenses((prevExpenses) => prevExpenses.filter((expense) => expense.id !== expenseId));
       toast({
         title: "Sucesso",
         description: "Despesa excluída com sucesso!",
