@@ -1,14 +1,24 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export const usePasswordValidation = (
   password: string,
   setNotePassword: (value: string | null) => void
 ) => {
   const { toast } = useToast();
+  const [isValidating, setIsValidating] = useState(false);
 
   const validatePassword = async (): Promise<boolean> => {
+    // Previne validações simultâneas
+    if (isValidating) {
+      console.log("Validação em andamento, ignorando chamada duplicada");
+      return false;
+    }
+    
+    setIsValidating(true);
+    
     try {
       console.time("validatePassword");
       
@@ -65,7 +75,10 @@ export const usePasswordValidation = (
       }
       
       // Comparação direta de senhas
-      if (data.note_password === password) {
+      const isPasswordValid = data.note_password === password;
+      
+      if (isPasswordValid) {
+        console.log("Senha validada com sucesso");
         setNotePassword(password);
         console.timeEnd("validatePassword");
         return true;
@@ -86,10 +99,13 @@ export const usePasswordValidation = (
         description: "Não foi possível validar a senha. Tente novamente."
       });
       return false;
+    } finally {
+      setIsValidating(false);
     }
   };
 
   return {
     validatePassword,
+    isValidating
   };
 };

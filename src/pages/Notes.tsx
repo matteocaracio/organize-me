@@ -16,6 +16,7 @@ import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 const Notes = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [hasGlobalPassword, setHasGlobalPassword] = useState<boolean | null>(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   
   const { notes, fetchNotes } = useNoteOperations();
   
@@ -52,7 +53,8 @@ const Notes = () => {
     setConfirmPassword,
     passwordMismatch,
     validateAndUpdateGlobalPassword,
-    checkGlobalPassword
+    checkGlobalPassword,
+    isInitialized
   } = useNotePassword();
 
   const {
@@ -78,25 +80,32 @@ const Notes = () => {
   const { searchTerm, setSearchTerm, filteredNotes } = useNoteFilters(notes);
 
   // Memoize the fetchNotes function to improve performance
-  const memoizedFetchNotes = useCallback(() => {
-    fetchNotes(showDeleted);
+  const memoizedFetchNotes = useCallback(async () => {
+    console.log("Buscando notas com showDeleted =", showDeleted);
+    const loadedNotes = await fetchNotes(showDeleted);
+    setIsDataLoaded(true);
+    return loadedNotes;
   }, [showDeleted, fetchNotes]);
 
   useEffect(() => {
     const checkPassword = async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) return;
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('note_password')
-        .eq('id', user.user.id)
-        .single();
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('note_password')
+          .eq('id', user.user.id)
+          .single();
 
-      if (!error) {
-        setHasGlobalPassword(!!data?.note_password);
-        // Run the checkGlobalPassword function to update any state in the hook
-        await checkGlobalPassword();
+        if (!error) {
+          setHasGlobalPassword(!!data?.note_password);
+          // Run the checkGlobalPassword function to update any state in the hook
+          await checkGlobalPassword();
+        }
+      } catch (error) {
+        console.error("Erro ao verificar senha:", error);
       }
     };
 
@@ -104,9 +113,12 @@ const Notes = () => {
   }, [globalPasswordDialog, passwordUpdateDialog]);
 
   useEffect(() => {
-    // Fetch notes initially and when showDeleted changes
-    memoizedFetchNotes();
-  }, [showDeleted, memoizedFetchNotes]);
+    // Fetch notes after password is initialized to avoid race conditions
+    if (isInitialized) {
+      console.log("Estado de senha inicializado, buscando notas");
+      memoizedFetchNotes();
+    }
+  }, [isInitialized, memoizedFetchNotes]);
 
   // Handle toggling between note lists - important for ensuring state consistency
   const handleToggleDeleted = useCallback(() => {
@@ -132,7 +144,11 @@ const Notes = () => {
           onToggleDeleted={handleToggleDeleted}
         />
 
-        {showDeleted ? (
+        {!isDataLoaded ? (
+          <div className="flex justify-center items-center p-8">
+            <p className="text-muted-foreground">Carregando notas...</p>
+          </div>
+        ) : showDeleted ? (
           <DeletedNoteList
             notes={filteredNotes}
             onRestore={restoreNote}

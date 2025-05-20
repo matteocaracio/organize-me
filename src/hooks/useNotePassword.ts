@@ -13,6 +13,7 @@ export const useNotePassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMismatch, setPasswordMismatch] = useState(false);
   const [hasGlobalPassword, setHasGlobalPassword] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const { checkGlobalPassword } = useGlobalPasswordCheck(setHasGlobalPassword, setNotePassword);
   const { validatePassword } = usePasswordValidation(password, setNotePassword);
@@ -31,8 +32,11 @@ export const useNotePassword = () => {
     
     const initializePassword = async () => {
       console.time("initializePassword");
-      if (isMounted) {
+      if (isMounted && !isInitialized) {
         await checkGlobalPassword();
+        if (isMounted) {
+          setIsInitialized(true);
+        }
       }
       console.timeEnd("initializePassword");
     };
@@ -64,5 +68,6 @@ export const useNotePassword = () => {
     validateAndUpdateGlobalPassword,
     hasGlobalPassword,
     checkGlobalPassword,
+    isInitialized
   };
 };

@@ -54,12 +54,13 @@ const PasswordDialog = ({
 
   const handleValidate = () => {
     if (password.trim() && !isSubmitting) {
+      console.log("Iniciando validação de senha");
       setIsSubmitting(true);
       onValidate();
       // Reset submission state after a reasonable timeout if needed
       setTimeout(() => {
         setIsSubmitting(false);
-      }, 1500);
+      }, 3000); // Aumentando o timeout para evitar múltiplas submissões
     }
   };
   
