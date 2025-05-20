@@ -34,7 +34,7 @@ export const useExpenseOperations = () => {
       const formattedExpenses: Expense[] = data.map((expense) => ({
         id: expense.id,
         description: expense.description,
-        amount: parseFloat(expense.amount), // Parse string to number
+        amount: parseFloat(expense.amount), // Parse string from database to number
         date: expense.date,
         category: expense.category,
       }));
@@ -82,7 +82,7 @@ export const useExpenseOperations = () => {
       const expense: Expense = {
         id: data.id,
         description: data.description,
-        amount: parseFloat(data.amount), // Parse string to number
+        amount: parseFloat(data.amount), // Parse string from database to number
         date: data.date,
         category: data.category,
       };
