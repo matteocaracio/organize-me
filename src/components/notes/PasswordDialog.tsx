@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,12 +27,13 @@ const PasswordDialog = ({
   onPasswordChange,
 }: PasswordDialogProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Handle Enter key press to submit the form
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && password.trim()) {
+    if (e.key === 'Enter' && password.trim() && !isSubmitting) {
       e.preventDefault();
-      onValidate();
+      handleValidate();
     }
   };
   
@@ -40,6 +41,7 @@ const PasswordDialog = ({
   useEffect(() => {
     if (!open) {
       onPasswordChange("");
+      setIsSubmitting(false);
     } else {
       // Focus on input when dialog opens with a small delay to ensure DOM is ready
       setTimeout(() => {
@@ -51,9 +53,14 @@ const PasswordDialog = ({
   }, [open, onPasswordChange]);
 
   const handleValidate = () => {
-    if (password.trim()) {
+    if (password.trim() && !isSubmitting) {
+      setIsSubmitting(true);
       console.log("Validando senha no clique do botão:", password.length, "caracteres");
       onValidate();
+      // Resetamos o estado de submitting após um tempo para permitir nova tentativa se necessário
+      setTimeout(() => {
+        setIsSubmitting(false);
+      }, 2000);
     }
   };
   
@@ -61,8 +68,10 @@ const PasswordDialog = ({
     <Dialog 
       open={open} 
       onOpenChange={(isOpen) => {
-        onOpenChange(isOpen);
-        if (!isOpen) onPasswordChange("");
+        if (!isSubmitting) {
+          onOpenChange(isOpen);
+          if (!isOpen) onPasswordChange("");
+        }
       }}
     >
       <DialogContent className="sm:max-w-md">
@@ -85,22 +94,26 @@ const PasswordDialog = ({
             onKeyDown={handleKeyPress}
             autoFocus
             className="mt-2"
+            disabled={isSubmitting}
           />
         </div>
         <DialogFooter>
           <Button
             variant="outline"
             onClick={() => {
-              onOpenChange(false);
+              if (!isSubmitting) {
+                onOpenChange(false);
+              }
             }}
+            disabled={isSubmitting}
           >
             Cancelar
           </Button>
           <Button 
             onClick={handleValidate}
-            disabled={!password.trim()}
+            disabled={!password.trim() || isSubmitting}
           >
-            Continuar
+            {isSubmitting ? "Verificando..." : "Continuar"}
           </Button>
         </DialogFooter>
       </DialogContent>

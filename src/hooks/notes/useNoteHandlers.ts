@@ -88,7 +88,7 @@ export const useNoteHandlers = (
     }
     
     // Mostramos um toast inicial para feedback imediato
-    toast({
+    const savingToast = toast({
       title: "Salvando...",
       description: "Sua nota está sendo salva."
     });
@@ -128,7 +128,7 @@ export const useNoteHandlers = (
     }
     
     // Mostrar feedback de carregamento
-    toast({
+    const validatingToast = toast({
       title: "Verificando senha...",
       description: "Aguarde um momento."
     });
@@ -142,7 +142,7 @@ export const useNoteHandlers = (
         // Use setTimeout to ensure UI updates properly before showing the note
         setTimeout(() => {
           setViewDialog(true);
-        }, 100);
+        }, 300); // Aumentando o delay para garantir que as atualizações de UI aconteçam
         toast({
           title: "Sucesso",
           description: "Senha validada com sucesso!"

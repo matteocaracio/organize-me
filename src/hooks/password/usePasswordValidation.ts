@@ -21,13 +21,13 @@ export const usePasswordValidation = (
       }
       
       // Get current user
-      const { data: session, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Erro ao obter sessão:", sessionError);
-        throw sessionError;
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error("Erro ao obter usuário:", userError);
+        throw userError;
       }
       
-      if (!session.session?.user) {
+      if (!userData.user) {
         console.error("Nenhum usuário autenticado");
         toast({
           variant: "destructive",
@@ -37,7 +37,7 @@ export const usePasswordValidation = (
         return false;
       }
       
-      const userId = session.session.user.id;
+      const userId = userData.user.id;
       console.log("Buscando senha global para o usuário:", userId);
       
       // Get the user's profile with note_password in a simpler query
@@ -45,7 +45,7 @@ export const usePasswordValidation = (
         .from('profiles')
         .select('note_password')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Erro ao buscar perfil:", error);
@@ -69,7 +69,7 @@ export const usePasswordValidation = (
         return false;
       }
 
-      console.log("Comparando senhas fornecidas:", password.length, "caracteres com", data.note_password.length, "caracteres");
+      console.log("Comparando senhas fornecidas");
       
       // Direct comparison of passwords
       if (data.note_password === password) {

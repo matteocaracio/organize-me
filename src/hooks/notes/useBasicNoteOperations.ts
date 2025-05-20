@@ -7,10 +7,12 @@ import type { NoteRow } from "@/types/supabase";
 
 export const useBasicNoteOperations = () => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchNotes = async (showDeleted: boolean = false) => {
     try {
+      setLoading(true);
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
         toast({
@@ -18,22 +20,23 @@ export const useBasicNoteOperations = () => {
           title: "Erro",
           description: "Você precisa estar logado para visualizar suas notas."
         });
+        setLoading(false);
         return [];
       }
 
-      let query = supabase
+      // Otimização: simplificar a consulta e reduzir o número de operações
+      const query = supabase
         .from('notes')
         .select('*')
-        .eq('user_id', user.user.id);
+        .eq('user_id', user.user.id)
+        .order('is_pinned', { ascending: false })
+        .order('updated_at', { ascending: false });
 
       if (showDeleted) {
-        query = query.not('deleted', 'is', null);
+        query.not('deleted', 'is', null);
       } else {
-        query = query.is('deleted', null);
+        query.is('deleted', null);
       }
-
-      query = query.order('is_pinned', { ascending: false })
-                 .order('updated_at', { ascending: false });
 
       const { data, error } = await query;
 
@@ -54,8 +57,10 @@ export const useBasicNoteOperations = () => {
         
         console.log("Notas carregadas:", formattedNotes.length, "showDeleted:", showDeleted);
         setNotes(formattedNotes);
+        setLoading(false);
         return formattedNotes;
       }
+      setLoading(false);
       return [];
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -64,6 +69,7 @@ export const useBasicNoteOperations = () => {
         title: "Erro",
         description: "Não foi possível carregar as notas."
       });
+      setLoading(false);
       return [];
     }
   };
@@ -82,8 +88,8 @@ export const useBasicNoteOperations = () => {
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
         toast({
           variant: "destructive",
           title: "Erro",
@@ -98,28 +104,28 @@ export const useBasicNoteOperations = () => {
         is_pinned: selectedNote?.isPinned || false,
         is_protected: newNote.isProtected,
         updated_at: new Date().toISOString(),
-        user_id: user.user.id
+        user_id: userData.user.id
       };
 
-      // First create the note object for instant UI update
+      // Atualização otimista da UI para resposta imediata
+      const tempId = selectedNote?.id || crypto.randomUUID();
       const tempNote: Note = {
-        id: selectedNote?.id || crypto.randomUUID(),
+        id: tempId,
         title: noteData.title,
         content: noteData.content || '',
         date: new Date(),
-        isPinned: noteData.is_pinned,
-        isProtected: noteData.is_protected,
+        isPinned: !!noteData.is_pinned,
+        isProtected: !!noteData.is_protected,
         deletedAt: undefined,
       };
 
-      // Update UI state immediately for a responsive feel
       if (selectedNote) {
-        setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? tempNote : n)));
+        setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? {...tempNote, id: selectedNote.id} : n)));
       } else {
         setNotes(prevNotes => [tempNote, ...prevNotes]);
       }
 
-      // Now do the actual database operation
+      // Agora, faça a operação de banco de dados
       let response;
       if (selectedNote) {
         response = await supabase
@@ -137,12 +143,11 @@ export const useBasicNoteOperations = () => {
       }
 
       if (response.error) {
-        console.error("Erro ao salvar nota:", response.error);
-        // Revert the UI change if there was an error
+        // Reverter a alteração da UI se houver um erro
         if (selectedNote) {
-          await fetchNotes();
+          setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? selectedNote : n)));
         } else {
-          setNotes(prevNotes => prevNotes.filter(n => n.id !== tempNote.id));
+          setNotes(prevNotes => prevNotes.filter(n => n.id !== tempId));
         }
         throw response.error;
       }
@@ -159,16 +164,14 @@ export const useBasicNoteOperations = () => {
           deletedAt: noteRow.deleted ? new Date(noteRow.deleted) : undefined,
         };
 
-        console.log("Nota salva com sucesso:", note);
-
-        // Update the notes list with the correct data from the server
+        // Atualizar a lista de notas com os dados corretos do servidor
         if (selectedNote) {
           setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? note : n)));
         } else {
-          // For new notes, replace our temporary entry with the real one
+          // Para notas novas, substitua nossa entrada temporária pela real
           setNotes(prevNotes => [
             note, 
-            ...prevNotes.filter(n => n.id !== tempNote.id)
+            ...prevNotes.filter(n => n.id !== tempId)
           ]);
         }
         
@@ -189,6 +192,7 @@ export const useBasicNoteOperations = () => {
   return {
     notes,
     setNotes,
+    loading,
     fetchNotes,
     addOrUpdateNote,
   };

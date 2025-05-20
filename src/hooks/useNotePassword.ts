@@ -37,7 +37,6 @@ export const useNotePassword = () => {
     setNotePassword,
     validatePassword,
     saveGlobalPassword,
-    // New password update fields
     currentPassword,
     setCurrentPassword,
     newPassword,
