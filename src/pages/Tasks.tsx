@@ -15,6 +15,7 @@ const Tasks = () => {
     priority: "medium",
     due_date: undefined,
   });
+  const [refreshTask, setRefreshTask] = useState(0);
 
   const {
     loading,
@@ -24,7 +25,7 @@ const Tasks = () => {
     completeTask,
     deleteTask,
     sortTasksByPriorityAndDueDate
-  } = useTasks();
+  } = useTasks(setRefreshTask, refreshTask);
 
   const handleNewTaskChange = (task: NewTaskFormData) => {
     setNewTask(task);

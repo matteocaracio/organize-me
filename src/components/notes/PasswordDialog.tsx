@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
 interface PasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onValidate: () => void;
+  onValidate: (password: string) => void;
   password: string;
   onPasswordChange: (password: string) => void;
 }
@@ -27,40 +27,35 @@ const PasswordDialog = ({
   onPasswordChange,
 }: PasswordDialogProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Handle Enter key press to submit the form
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && password.trim() && !isSubmitting) {
+    if (e.key === 'Enter' && password.trim()) {
       e.preventDefault();
-      handleValidate();
+      onPasswordChange(password);
+      onValidate(password);
     }
   };
   
-  // Melhorar o foco e limpeza do diálogo
+  // Clear password when dialog closes and focus input when opens
   useEffect(() => {
     if (!open) {
       onPasswordChange("");
-      setIsSubmitting(false);
     } else {
-      // Focus on input when dialog opens
+      // Focus on input when dialog opens with a small delay to ensure DOM is ready
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
         }
-      }, 50);
+      }, 100);
     }
   }, [open, onPasswordChange]);
 
   const handleValidate = () => {
-    if (password.trim() && !isSubmitting) {
-      console.log("Iniciando validação de senha");
-      setIsSubmitting(true);
-      onValidate();
-      // Reset submission state after a reasonable timeout if needed
-      setTimeout(() => {
-        setIsSubmitting(false);
-      }, 3000); // Aumentando o timeout para evitar múltiplas submissões
+    if (password.trim()) {
+      console.log("Validando senha no clique do botão:", password.length, "caracteres");
+      onPasswordChange(password);
+      onValidate(password);
     }
   };
   
@@ -68,9 +63,8 @@ const PasswordDialog = ({
     <Dialog 
       open={open} 
       onOpenChange={(isOpen) => {
-        if (!isSubmitting) {
-          onOpenChange(isOpen);
-        }
+        onOpenChange(isOpen);
+        if (!isOpen) onPasswordChange("");
       }}
     >
       <DialogContent className="sm:max-w-md">
@@ -93,26 +87,22 @@ const PasswordDialog = ({
             onKeyDown={handleKeyPress}
             autoFocus
             className="mt-2"
-            disabled={isSubmitting}
           />
         </div>
         <DialogFooter>
           <Button
             variant="outline"
             onClick={() => {
-              if (!isSubmitting) {
-                onOpenChange(false);
-              }
+              onOpenChange(false);
             }}
-            disabled={isSubmitting}
           >
             Cancelar
           </Button>
           <Button 
             onClick={handleValidate}
-            disabled={!password.trim() || isSubmitting}
+            disabled={!password.trim()}
           >
-            {isSubmitting ? "Verificando..." : "Continuar"}
+            Continuar
           </Button>
         </DialogFooter>
       </DialogContent>

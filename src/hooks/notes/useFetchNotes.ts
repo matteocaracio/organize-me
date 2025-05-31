@@ -10,29 +10,20 @@ export const useFetchNotes = () => {
   const { toast } = useToast();
 
   const fetchNotes = async (showDeleted: boolean = false) => {
-    console.time("fetchNotes");
     try {
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+      if (!user.user) return;
 
       let query = supabase
         .from('notes')
         .select('*')
-        .eq('user_id', user.user.id);
+        .eq('user_id', user.user.id)
+        .order('created_at', { ascending: false });
 
-      // Using explicit IS NULL or IS NOT NULL for better reliability
       if (showDeleted) {
         query = query.not('deleted', 'is', null);
       } else {
         query = query.is('deleted', null);
-      }
-
-      // Add appropriate sorting based on whether we're showing deleted notes
-      if (showDeleted) {
-        query = query.order('deleted', { ascending: false });
-      } else {
-        query = query.order('is_pinned', { ascending: false })
-                    .order('updated_at', { ascending: false });
       }
 
       const { data, error } = await query;
@@ -49,15 +40,8 @@ export const useFetchNotes = () => {
           isProtected: !!note.is_protected,
           deletedAt: note.deleted ? new Date(note.deleted) : undefined,
         }));
-        
-        console.log(`Fetched ${formattedNotes.length} notes (showDeleted=${showDeleted})`);
         setNotes(formattedNotes);
-        console.timeEnd("fetchNotes");
-        return formattedNotes;
       }
-      
-      console.timeEnd("fetchNotes");
-      return [];
     } catch (error) {
       console.error('Error fetching notes:', error);
       toast({
@@ -65,8 +49,6 @@ export const useFetchNotes = () => {
         title: "Erro",
         description: "Não foi possível carregar as notas."
       });
-      console.timeEnd("fetchNotes");
-      return [];
     }
   };
 

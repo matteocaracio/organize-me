@@ -34,7 +34,7 @@ export const useExpenseOperations = () => {
       const formattedExpenses: Expense[] = data.map((expense) => ({
         id: expense.id,
         description: expense.description,
-        amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
+        amount: expense.amount, // Parse string to number
         date: expense.date,
         category: expense.category,
       }));
@@ -64,12 +64,12 @@ export const useExpenseOperations = () => {
         return null;
       }
 
-      // Don't convert amount to string for database storage
+      // Insert expense with the correct types, converting number to string
       const { data, error } = await supabase
         .from("expenses")
         .insert({
           description: newExpense.description,
-          amount: newExpense.amount, // Keep as number, don't convert to string
+          amount: newExpense.amount, // Convert to string here
           date: newExpense.date,
           category: newExpense.category,
           user_id: user.user.id,
@@ -82,7 +82,7 @@ export const useExpenseOperations = () => {
       const expense: Expense = {
         id: data.id,
         description: data.description,
-        amount: typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount,
+        amount: data.amount, // Parse string to number
         date: data.date,
         category: data.category,
       };
@@ -107,17 +107,14 @@ export const useExpenseOperations = () => {
 
   const deleteExpense = async (id: string) => {
     try {
-      // Ensure id is a string
-      const expenseId = typeof id === 'number' ? String(id) : id;
-      
       const { error } = await supabase
         .from("expenses")
         .delete()
-        .eq("id", expenseId);
+        .eq("id", id);
 
       if (error) throw error;
 
-      setExpenses((prevExpenses) => prevExpenses.filter((expense) => expense.id !== expenseId));
+      setExpenses((prevExpenses) => prevExpenses.filter((expense) => expense.id !== id));
       toast({
         title: "Sucesso",
         description: "Despesa excluída com sucesso!",

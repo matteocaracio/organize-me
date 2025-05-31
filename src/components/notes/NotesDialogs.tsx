@@ -25,7 +25,7 @@ interface NotesDialogsProps {
   password: string;
   passwordDialog: boolean;
   setPasswordDialog: (open: boolean) => void;
-  onValidatePassword: () => Promise<void>;
+  onValidatePassword: (password: string) => Promise<void>;
   onPasswordChange: (value: string) => void;
   globalPasswordDialog: boolean;
   setGlobalPasswordDialog: (open: boolean) => void;
@@ -43,6 +43,7 @@ interface NotesDialogsProps {
   onNewPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
   onValidateAndUpdate: () => Promise<boolean>;
+  setRefresh ?: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const NotesDialogs = ({
@@ -76,6 +77,7 @@ const NotesDialogs = ({
   onNewPasswordChange,
   onConfirmPasswordChange,
   onValidateAndUpdate,
+  setRefresh,
 }: NotesDialogsProps) => {
   return (
     <>
@@ -86,6 +88,7 @@ const NotesDialogs = ({
         onNewNoteChange={onNewNoteChange}
         onSave={onSaveNote}
         password={password}
+        setRefresh={setRefresh}
       />
 
       <ViewNoteDialog

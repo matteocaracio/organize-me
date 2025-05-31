@@ -7,7 +7,11 @@ import { useTaskSorting } from "./useTaskSorting";
 import type { TaskRow } from "@/types/supabase";
 
 // Updated type definition here to support both direct array assignment and callback pattern
-export const useAddTask = (tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>) => {
+export const useAddTask = (
+  tasks: Task[],
+ setTasks: React.Dispatch<React.SetStateAction<Task[]>>,
+ setRefreshTask:React.Dispatch<React.SetStateAction<number>>,
+) => {
   const { toast } = useToast();
   const { sortTasksByPriorityAndDueDate } = useTaskSorting();
 
@@ -67,6 +71,8 @@ export const useAddTask = (tasks: Task[], setTasks: React.Dispatch<React.SetStat
           title: "Sucesso",
           description: "Tarefa adicionada com sucesso!"
         });
+
+        setRefreshTask(prev => prev + 1);
       }
     } catch (error) {
       console.error('Error adding task:', error);

@@ -3,22 +3,24 @@ import { useBasicNoteOperations } from "./useBasicNoteOperations";
 import { useNoteDeleteOperations } from "./useNoteDeleteOperations";
 import { useNotePinOperations } from "./useNotePinOperations";
 
-export const useNoteOperations = () => {
+export const useNoteOperations = (
+  setRefresh ?: React.Dispatch<React.SetStateAction<number>>
+) => {
   const {
     notes,
     setNotes,
     fetchNotes,
     addOrUpdateNote,
-  } = useBasicNoteOperations();
+  } = useBasicNoteOperations(setRefresh);
 
   const {
     deleteNote,
     permanentlyDeleteNote,
     clearTrash,
     restoreNote,
-  } = useNoteDeleteOperations(notes, setNotes);
+  } = useNoteDeleteOperations(notes, setNotes, setRefresh);
 
-  const { togglePin } = useNotePinOperations(notes, setNotes);
+  const { togglePin } = useNotePinOperations(notes, setNotes, setRefresh);
 
   return {
     notes,

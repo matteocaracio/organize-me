@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Note } from "@/components/notes/types";
 
-export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[]) => void) => {
+export const useNoteDeleteOperations = (
+  notes: Note[], 
+  setNotes: (notes: Note[]) => void,
+  setRefresh ?: React.Dispatch<React.SetStateAction<number>>
+) => {
   const { toast } = useToast();
 
   const deleteNote = async (id: string) => {
@@ -15,13 +19,17 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
 
       if (error) throw error;
 
-      // Remove the note from the current view immediately
-      setNotes(notes.filter(note => note.id !== id));
+      setNotes(notes.map(note =>
+        note.id === id ? { ...note, deletedAt: new Date() } : note
+      ));
 
       toast({
         title: "Sucesso",
         description: "Nota movida para a lixeira!"
       });
+
+      setRefresh(prev => prev + 1);
+
       return true;
     } catch (error) {
       console.error('Error deleting note:', error);
@@ -49,6 +57,7 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
         title: "Sucesso",
         description: "Nota excluída permanentemente!"
       });
+      setRefresh(prev => prev - 1);
       return true;
     } catch (error) {
       console.error('Error permanently deleting note:', error);
@@ -76,6 +85,9 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
         title: "Sucesso",
         description: "Lixeira esvaziada com sucesso!"
       });
+
+      setRefresh(prev => prev + 1);
+
       return true;
     } catch (error) {
       console.error('Error clearing trash:', error);
@@ -97,13 +109,13 @@ export const useNoteDeleteOperations = (notes: Note[], setNotes: (notes: Note[])
 
       if (error) throw error;
 
-      // Remove the note from the current trash view
       setNotes(notes.filter(note => note.id !== id));
 
       toast({
         title: "Sucesso",
         description: "Nota restaurada com sucesso!"
       });
+      setRefresh(prev => prev + 1);
       return true;
     } catch (error) {
       console.error('Error restoring note:', error);

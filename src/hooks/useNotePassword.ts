@@ -13,7 +13,6 @@ export const useNotePassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMismatch, setPasswordMismatch] = useState(false);
   const [hasGlobalPassword, setHasGlobalPassword] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   
   const { checkGlobalPassword } = useGlobalPasswordCheck(setHasGlobalPassword, setNotePassword);
   const { validatePassword } = usePasswordValidation(password, setNotePassword);
@@ -26,29 +25,9 @@ export const useNotePassword = () => {
     setPasswordMismatch
   );
   
-  // Otimizando a verificação de senha global na inicialização
+  // Check if global password is set on component mount
   useEffect(() => {
-    let isMounted = true;
-    
-    const initializePassword = async () => {
-      console.time("initializePassword");
-      if (isMounted && !isInitialized) {
-        await checkGlobalPassword();
-        if (isMounted) {
-          setIsInitialized(true);
-        }
-      }
-      console.timeEnd("initializePassword");
-    };
-    
-    // Usando setTimeout(0) para não bloquear a renderização inicial
-    setTimeout(() => {
-      initializePassword();
-    }, 0);
-    
-    return () => {
-      isMounted = false;
-    };
+    checkGlobalPassword();
   }, []);
 
   return {
@@ -58,6 +37,7 @@ export const useNotePassword = () => {
     setNotePassword,
     validatePassword,
     saveGlobalPassword,
+    // New password update fields
     currentPassword,
     setCurrentPassword,
     newPassword,
@@ -68,6 +48,5 @@ export const useNotePassword = () => {
     validateAndUpdateGlobalPassword,
     hasGlobalPassword,
     checkGlobalPassword,
-    isInitialized
   };
 };

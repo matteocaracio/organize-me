@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/components/tasks/types";
 
-export const useTaskStatusOperations = (tasks: Task[], setTasks: (tasks: Task[]) => void) => {
+export const useTaskStatusOperations = (
+  tasks: Task[], 
+  setTasks: (tasks: Task[]) => void,
+  setRefreshTask:React.Dispatch<React.SetStateAction<number>>,
+) => {
   const { toast } = useToast();
 
   const completeTask = async (id: string) => {
@@ -35,6 +39,7 @@ export const useTaskStatusOperations = (tasks: Task[], setTasks: (tasks: Task[])
         title: "Sucesso",
         description: "Status da tarefa atualizado!"
       });
+      setRefreshTask(prev => prev - 1);
     } catch (error) {
       console.error('Error completing task:', error);
       toast({
@@ -62,6 +67,7 @@ export const useTaskStatusOperations = (tasks: Task[], setTasks: (tasks: Task[])
           description: "Tarefa excluída com sucesso!"
         });
       }
+      setRefreshTask(prev => prev + 1);
     } catch (error) {
       console.error('Error deleting task:', error);
       if (!silent) {

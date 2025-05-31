@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Note } from "@/components/notes/types";
 
-export const useNotePinOperations = (notes: Note[], setNotes: (notes: Note[]) => void) => {
+export const useNotePinOperations = (
+  notes: Note[],
+ setNotes: (notes: Note[]) => void,
+ setRefresh ?: React.Dispatch<React.SetStateAction<number>>
+) => {
   const { toast } = useToast();
 
   const togglePin = async (id: string) => {
@@ -28,6 +32,8 @@ export const useNotePinOperations = (notes: Note[], setNotes: (notes: Note[]) =>
         title: "Sucesso",
         description: `Nota ${noteToUpdate.isPinned ? "desafixada" : "fixada"}!`
       });
+
+      setRefresh(prev => prev - 1);
       return true;
     } catch (error) {
       console.error('Error toggling pin:', error);

@@ -3,7 +3,7 @@ import { useNoteOperations } from "@/hooks/notes/useNoteOperations";
 import { useNotePassword } from "@/hooks/useNotePassword";
 import type { Note } from "@/components/notes/types";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useEffect } from "react";
 
 export const useNoteHandlers = (
   setNewNoteDialog: (value: boolean) => void,
@@ -12,7 +12,8 @@ export const useNoteHandlers = (
   selectedNote: Note | null,
   setSelectedNote: (note: Note | null) => void,
   newNote: any,
-  setNewNote: (note: any) => void
+  setNewNote: (note: any) => void,
+  setRefresh ?: React.Dispatch<React.SetStateAction<number>>
 ) => {
   const {
     notes,
@@ -23,7 +24,13 @@ export const useNoteHandlers = (
     restoreNote,
     permanentlyDeleteNote,
     clearTrash,
-  } = useNoteOperations();
+  } = useNoteOperations(setRefresh);
+
+  
+
+  useEffect(()=>{
+    fetchNotes(false);
+  },[]);
 
   const {
     password,
@@ -31,86 +38,55 @@ export const useNoteHandlers = (
   } = useNotePassword();
 
   const { toast } = useToast();
-  // Adicionar flag para controlar exibição de toasts de erro
-  const [isProcessingNote, setIsProcessingNote] = useState(false);
 
   const handleViewNote = async (id: string) => {
-    // Evitar múltiplas chamadas simultâneas
-    if (isProcessingNote) return;
-    
     console.log("Tentando visualizar nota com ID:", id);
-    setIsProcessingNote(true);
-    
-    try {
-      const noteToView = notes.find(note => note.id === id);
-      if (noteToView) {
-        setSelectedNote(noteToView);
-        
-        // Se a nota é protegida, mostra diálogo de senha
-        if (noteToView.isProtected) {
-          setPasswordDialog(true);
-        } else {
-          // Senão, mostra a nota diretamente
-          setViewDialog(true);
-        }
+    console.log("Notas disponíveis:", notes.length);
+
+    const noteToView = notes.find(note => note.id === id);
+    if (noteToView) {
+      console.log("Nota encontrada:", noteToView);
+      setSelectedNote(noteToView);
+      
+      // Se a nota é protegida, mostra diálogo de senha
+      if (noteToView.isProtected) {
+        setPasswordDialog(true);
       } else {
-        console.error("Nota não encontrada com ID:", id);
-        // Usando um único toast para evitar duplicação
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Nota não encontrada."
-        });
+        // Senão, mostra a nota diretamente
+        setViewDialog(true);
       }
-    } catch (error) {
-      console.error("Erro ao tentar visualizar nota:", error);
+    } else {
+      console.error("Nota não encontrada com ID:", id);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Ocorreu um erro ao tentar visualizar a nota."
+        description: "Nota não encontrada."
       });
-    } finally {
-      setIsProcessingNote(false);
     }
   };
 
   const handleEditNote = async (id: string) => {
-    // Evitar múltiplas chamadas simultâneas
-    if (isProcessingNote) return;
-    
-    setIsProcessingNote(true);
-    try {
-      const noteToEdit = notes.find(note => note.id === id);
-      if (noteToEdit) {
-        setSelectedNote(noteToEdit);
-        setNewNote({
-          title: noteToEdit.title,
-          content: noteToEdit.content,
-          isProtected: noteToEdit.isProtected,
-          password: ""
-        });
-        setNewNoteDialog(true);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Nota não encontrada para edição."
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao editar nota:", error);
+    const noteToEdit = notes.find(note => note.id === id);
+    if (noteToEdit) {
+      setSelectedNote(noteToEdit);
+      setNewNote({
+        title: noteToEdit.title,
+        content: noteToEdit.content,
+        isProtected: noteToEdit.isProtected,
+        password: ""
+      });
+      setNewNoteDialog(true);
+      setRefresh(prev => prev + 1);
+    } else {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Ocorreu um erro ao tentar editar a nota."
+        description: "Nota não encontrada para edição."
       });
-    } finally {
-      setIsProcessingNote(false);
     }
   };
 
   const handleSaveNote = async () => {
-    console.time("handleSaveNote");
     if (!newNote.title.trim()) {
       toast({
         variant: "destructive",
@@ -127,11 +103,9 @@ export const useNoteHandlers = (
     });
     
     try {
-      // Use atualização otimista de UI - feche o diálogo imediatamente
-      setNewNoteDialog(false);
-      
       const savedNote = await addOrUpdateNote(newNote, selectedNote);
       if (savedNote) {
+        setNewNoteDialog(false);
         setNewNote({ title: "", content: "", isProtected: false, password: "" });
         setSelectedNote(null);
         
@@ -139,8 +113,8 @@ export const useNoteHandlers = (
           title: "Sucesso",
           description: selectedNote ? "Nota atualizada com sucesso!" : "Nota adicionada com sucesso!"
         });
+        setRefresh(prev => prev - 1);
       }
-      console.timeEnd("handleSaveNote");
     } catch (error) {
       console.error("Erro ao salvar nota:", error);
       toast({
@@ -148,13 +122,11 @@ export const useNoteHandlers = (
         title: "Erro",
         description: "Não foi possível salvar a nota. Tente novamente."
       });
-      // Reabrir o diálogo em caso de erro
-      setNewNoteDialog(true);
     }
   };
 
-  const handlePasswordValidation = async () => {
-    console.time("handlePasswordValidation");
+  const handlePasswordValidation = async (password: string) => {
+    console.log("Validando senha:", password ? password.length + " caracteres fornecidos" : "sem senha");
     
     if (!password.trim()) {
       toast({
@@ -165,10 +137,6 @@ export const useNoteHandlers = (
       return;
     }
     
-    // Garantir que não haja chamadas duplicadas
-    if (isProcessingNote) return;
-    setIsProcessingNote(true);
-    
     // Mostrar feedback de carregamento
     toast({
       title: "Verificando senha...",
@@ -176,17 +144,14 @@ export const useNoteHandlers = (
     });
     
     try {
-      console.log("Validando senha para nota:", selectedNote?.id);
-      const isValid = await validatePassword();
-      console.log("Resultado da validação:", isValid);
+      const isValid = await validatePassword(password);
+      console.log("Resultado da validação da senha:", isValid);
       
       if (isValid) {
         setPasswordDialog(false);
-        // Use setTimeout com tempo reduzido
+        // Use setTimeout to ensure UI updates properly before showing the note
         setTimeout(() => {
-          if (selectedNote) {
-            setViewDialog(true);
-          }
+          setViewDialog(true);
         }, 100);
         toast({
           title: "Sucesso",
@@ -200,9 +165,6 @@ export const useNoteHandlers = (
         title: "Erro",
         description: "Erro ao validar senha. Tente novamente."
       });
-    } finally {
-      setIsProcessingNote(false);
-      console.timeEnd("handlePasswordValidation");
     }
   };
 

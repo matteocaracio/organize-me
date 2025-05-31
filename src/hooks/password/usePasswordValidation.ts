@@ -1,26 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 export const usePasswordValidation = (
   password: string,
   setNotePassword: (value: string | null) => void
 ) => {
-  const { toast } = useToast();
-  const [isValidating, setIsValidating] = useState(false);
-
-  const validatePassword = async (): Promise<boolean> => {
-    // Previne validações simultâneas
-    if (isValidating) {
-      console.log("Validação em andamento, ignorando chamada duplicada");
-      return false;
-    }
-    
-    setIsValidating(true);
-    
+  const validatePassword = async (password: string): Promise<boolean> => {
     try {
-      console.time("validatePassword");
+      console.log("Iniciando validação de senha");
       
       if (!password || !password.trim()) {
         console.error("Senha vazia fornecida");
@@ -32,10 +20,14 @@ export const usePasswordValidation = (
         return false;
       }
       
-      // Get current user - using concise query
-      const { data: userData } = await supabase.auth.getUser();
+      // Get current user
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Erro ao obter sessão:", sessionError);
+        throw sessionError;
+      }
       
-      if (!userData.user) {
+      if (!session.session?.user) {
         console.error("Nenhum usuário autenticado");
         toast({
           variant: "destructive",
@@ -45,14 +37,15 @@ export const usePasswordValidation = (
         return false;
       }
       
-      const userId = userData.user.id;
+      const userId = session.session.user.id;
+      console.log("Buscando senha global para o usuário:", userId);
       
-      // Otimizando a query para ser mais direta e eficiente
+      // Get the user's profile with note_password in a simpler query
       const { data, error } = await supabase
         .from('profiles')
         .select('note_password')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error("Erro ao buscar perfil:", error);
@@ -63,6 +56,8 @@ export const usePasswordValidation = (
         });
         return false;
       }
+
+      console.log("Perfil encontrado:", data ? "sim" : "não");
       
       if (!data?.note_password) {
         console.error("Senha global não configurada");
@@ -73,14 +68,13 @@ export const usePasswordValidation = (
         });
         return false;
       }
+
+      console.log("Comparando senhas fornecidas:", password.length, "caracteres com", data.note_password.length, "caracteres");
       
-      // Comparação direta de senhas
-      const isPasswordValid = data.note_password === password;
-      
-      if (isPasswordValid) {
-        console.log("Senha validada com sucesso");
+      // Direct comparison of passwords
+      if (data.note_password === password) {
+        console.log("Senha válida! Definindo senha da nota.");
         setNotePassword(password);
-        console.timeEnd("validatePassword");
         return true;
       }
 
@@ -99,13 +93,10 @@ export const usePasswordValidation = (
         description: "Não foi possível validar a senha. Tente novamente."
       });
       return false;
-    } finally {
-      setIsValidating(false);
     }
   };
 
   return {
     validatePassword,
-    isValidating
   };
 };

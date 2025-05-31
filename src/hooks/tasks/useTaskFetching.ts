@@ -8,12 +8,14 @@ import { subHours, isAfter } from "date-fns";
 export const useTaskFetching = (
   setTasks: (tasks: Task[]) => void,
   setLoading: (loading: boolean) => void,
-  deleteTask: (id: string, silent: boolean) => Promise<void>
+  deleteTask: (id: string, silent: boolean) => Promise<void>,
+  refreshTask:number,
 ) => {
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchTasks = async () => {
+      console.log("tasks fetch")
       try {
         const { data: user } = await supabase.auth.getUser();
         if (!user.user) return;
@@ -72,5 +74,5 @@ export const useTaskFetching = (
     };
 
     fetchTasks();
-  }, [toast, setTasks, setLoading, deleteTask]);
+  }, [refreshTask]);
 };

@@ -5,14 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import type { Note } from "@/components/notes/types";
 import type { NoteRow } from "@/types/supabase";
 
-export const useBasicNoteOperations = () => {
+export const useBasicNoteOperations = (
+  setRefresh ?: React.Dispatch<React.SetStateAction<number>>
+) => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchNotes = async (showDeleted: boolean = false) => {
     try {
-      setLoading(true);
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
         toast({
@@ -20,25 +20,22 @@ export const useBasicNoteOperations = () => {
           title: "Erro",
           description: "Você precisa estar logado para visualizar suas notas."
         });
-        setLoading(false);
         return [];
       }
 
-      // Build query with explicit IS NULL or IS NOT NULL for better SQL performance
-      const query = supabase
+      let query = supabase
         .from('notes')
         .select('*')
         .eq('user_id', user.user.id);
-      
-      // Use explicit IS NULL or IS NOT NULL checks for better reliability
+
       if (showDeleted) {
-        query.not('deleted', 'is', null);
-        query.order('deleted', { ascending: false }); // Sort deleted notes by deletion date
+        query = query.not('deleted', 'is', null);
       } else {
-        query.is('deleted', null);
-        query.order('is_pinned', { ascending: false })
-             .order('updated_at', { ascending: false });
+        query = query.is('deleted', null);
       }
+
+      query = query.order('is_pinned', { ascending: false })
+                 .order('updated_at', { ascending: false });
 
       const { data, error } = await query;
 
@@ -57,12 +54,10 @@ export const useBasicNoteOperations = () => {
           deletedAt: note.deleted ? new Date(note.deleted) : undefined,
         }));
         
-        console.log(`Fetched ${formattedNotes.length} notes (showDeleted=${showDeleted})`);
+        console.log("Notas carregadas:", formattedNotes.length, "showDeleted:", showDeleted);
         setNotes(formattedNotes);
-        setLoading(false);
         return formattedNotes;
       }
-      setLoading(false);
       return [];
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -71,7 +66,6 @@ export const useBasicNoteOperations = () => {
         title: "Erro",
         description: "Não foi possível carregar as notas."
       });
-      setLoading(false);
       return [];
     }
   };
@@ -90,8 +84,8 @@ export const useBasicNoteOperations = () => {
     }
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
         toast({
           variant: "destructive",
           title: "Erro",
@@ -106,31 +100,28 @@ export const useBasicNoteOperations = () => {
         is_pinned: selectedNote?.isPinned || false,
         is_protected: newNote.isProtected,
         updated_at: new Date().toISOString(),
-        user_id: userData.user.id,
-        // Ensure deleted is null for new or updated notes
-        deleted: null
+        user_id: user.user.id
       };
 
-      // Atualização otimista da UI para resposta imediata
-      const tempId = selectedNote?.id || crypto.randomUUID();
+      // First create the note object for instant UI update
       const tempNote: Note = {
-        id: tempId,
+        id: selectedNote?.id || crypto.randomUUID(),
         title: noteData.title,
         content: noteData.content || '',
         date: new Date(),
-        isPinned: !!noteData.is_pinned,
-        isProtected: !!noteData.is_protected,
-        deletedAt: undefined, // Always undefined for new or updated notes
+        isPinned: noteData.is_pinned,
+        isProtected: noteData.is_protected,
+        deletedAt: undefined,
       };
 
-      // Update UI optimistically
+      // Update UI state immediately for a responsive feel
       if (selectedNote) {
-        setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? {...tempNote, id: selectedNote.id} : n)));
+        setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? tempNote : n)));
       } else {
         setNotes(prevNotes => [tempNote, ...prevNotes]);
       }
 
-      // Agora, faça a operação de banco de dados
+      // Now do the actual database operation
       let response;
       if (selectedNote) {
         response = await supabase
@@ -148,11 +139,12 @@ export const useBasicNoteOperations = () => {
       }
 
       if (response.error) {
-        // Reverter a alteração da UI se houver um erro
+        console.error("Erro ao salvar nota:", response.error);
+        // Revert the UI change if there was an error
         if (selectedNote) {
-          setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? selectedNote : n)));
+          await fetchNotes();
         } else {
-          setNotes(prevNotes => prevNotes.filter(n => n.id !== tempId));
+          setNotes(prevNotes => prevNotes.filter(n => n.id !== tempNote.id));
         }
         throw response.error;
       }
@@ -169,17 +161,19 @@ export const useBasicNoteOperations = () => {
           deletedAt: noteRow.deleted ? new Date(noteRow.deleted) : undefined,
         };
 
-        // Atualizar a lista de notas com os dados corretos do servidor
+        console.log("Nota salva com sucesso:", note);
+
+        // Update the notes list with the correct data from the server
         if (selectedNote) {
           setNotes(prevNotes => prevNotes.map((n) => (n.id === selectedNote.id ? note : n)));
         } else {
-          // Para notas novas, substitua nossa entrada temporária pela real
+          // For new notes, replace our temporary entry with the real one
           setNotes(prevNotes => [
             note, 
-            ...prevNotes.filter(n => n.id !== tempId)
+            ...prevNotes.filter(n => n.id !== tempNote.id)
           ]);
         }
-        
+        setRefresh(prev => prev + 1);
         return note;
       }
       return null;
@@ -197,7 +191,6 @@ export const useBasicNoteOperations = () => {
   return {
     notes,
     setNotes,
-    loading,
     fetchNotes,
     addOrUpdateNote,
   };
